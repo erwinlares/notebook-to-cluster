@@ -1,0 +1,272 @@
+---
+title: "from the Notebook to the Cluster"
+author: "Erwin Lares"
+format: html
+execute: 
+  echo: false
+  message: false
+  warning: false
+---
+
+## What this is 
+
+What happens when your data grow too large for your laptop? That was the question that gave rise to this project we call _"From the Notebook to the Cluster_". 
+
+## What should you expect? 
+
+The document, well ... documents the steps I took to load my data, analyze, and produce research artifacts. It also documents the steps needed to take to be able to ship my analysis once the data grew beyond the capabilities of my laptop. 
+
+## The Notebook half
+
+```{r setup-and-libraries}
+#| echo: false
+#| include: false
+
+library(tidyverse)
+library(tictoc)
+library(RSQLite)
+library(janitor)
+library(gt)
+library(quarto)
+```
+
+
+Sometimes we have an analysis that we need to run. Depending on the computational needs it might be perfectly fine to run your entire workflow on your personal device. 
+
+
+### Ingest the data 
+
+The first step is to get the data into whatever tool we intent to use for our analysis. In this case it is the R programming language. Future iteration of this document will include a Python version. 
+
+There are numerous ways in which data can be digested. This guide shows a few options 
+
+#### Data saved as a local flat file  
+
+```{r}
+
+tic(msg = "local csv")
+data <- read_csv(file = "data/original-penguins.csv")
+toc()
+```
+
+#### Data distributed as part of a package. 
+
+```{r}
+tic(msg = "package data")
+data <- palmerpenguins::penguins
+toc()
+```
+
+
+#### Data read from a database 
+
+```{r}
+
+con <- dbConnect(SQLite(), "data/temp_db")
+tic(msg = "database")
+data <- dbGetQuery(con, "select * from penguins")
+toc()
+dbDisconnect(con)
+```
+
+#### Data from an online source 
+
+
+```{r}
+
+tic(msg = "data from an online source")
+data <- read_csv("https://go.wisc.edu/9pv6q1")
+toc()
+
+```
+
+### Cleaning and Data prep 
+
+Once the data is ingested, a particular analysis may require cleaning, reshaping, or creating new variables. 
+
+In this particular case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to _snake/_case_, make them more descriptive and we'll get rid of some unnecessary variables. 
+
+#### a - cleaning names
+
+The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally only the new variables are kept. 
+
+For an alternative way to accomplish this, consider using the `clean_names()` function from the `janitor` package which implements the _Style Guide_ mentioned above.  
+
+```{r}
+
+data <- data |>
+    select(Species, 
+           Island,
+           `Culmen Length (mm)`,
+           `Culmen Depth (mm)`,
+           `Flipper Length (mm)`,
+           `Body Mass (g)`, 
+           Sex,
+           `Date Egg`) |>
+    mutate(species = word(Species, 1), 
+           island = Island,
+           bill_length_mm = `Culmen Length (mm)`,
+           bill_depth_mm = `Culmen Depth (mm)`,
+           flipper_length_mm = `Flipper Length (mm)`,
+           body_mass_g = `Body Mass (g)`, 
+           sex = Sex,
+           year = year(`Date Egg`)) |> 
+    select(species, 
+           island,
+           bill_length_mm,
+           bill_depth_mm,
+           flipper_length_mm,
+           body_mass_g, 
+           sex,
+           year)
+
+```
+
+#### Creating new variables 
+
+As part of the analysis, we may need to create new variables. In our case, we want to classify each specimen as small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is at or below the 1st quartile, that penguin is _small_, above the 1st quartile and at or below the 3rd quartile, _medium_. Finally, any specimen above the 3th will be classified as _large_. 
+
+- tiny: 0% < penguin <= 25%
+- small: 25% < penguin <= 50%
+- medium: 50% < penguin <= 75%
+- large: 75% < penguin <= 100%
+
+One possible way to accomplish this is detailed below.
+
+```{r}
+
+p_quartiles <- function(df) {
+    df |> 
+    select(body_mass_g) |> 
+    as_vector() |> 
+    quantile(probs = c(.25, .5, .75, 1),na.rm = TRUE)
+}
+
+quartile_data <- data |>
+    split(data$species) |> 
+#  group_split(species) |> #loses the grouping values 
+    map(p_quartiles) |>
+    bind_rows(.id = "id") |> 
+    rename(species = id)
+
+
+
+```
+The resulting table, named `quartile data` contains the cutout values segregated by species. 
+
+```{r}
+quartile_data |> 
+    gt() |>
+    tab_header("Cutout values for weight per species")
+    
+```
+
+We will create a new variable `size` of type factor which contains the size label of each specimen.
+
+```{r}
+data <- data |> 
+    group_by(species) |> 
+    mutate(size = case_when(
+        body_mass_g <= quartile_data[[cur_group_id(),2]] ~ "tiny",
+        body_mass_g <= quartile_data[[cur_group_id(),3]] ~ "small",
+        body_mass_g <= quartile_data[[cur_group_id(),4]] ~ "medium",
+        body_mass_g > quartile_data[[cur_group_id(),4]] ~ "large")) |>
+    ungroup() |> 
+    mutate(size = factor(size, levels = c("tiny", "small", "medium", "large")))
+```
+
+### Communicating findings
+
+An analysis can result in a number of _research artifacts_. Common among those are tables, visualization, and models. These artifacts can be subsequently shared in a variety of formats such as printed documents, online documents, dashboards, and APIs just to name a few. 
+
+#### Tables 
+
+There is a variety of choices to create great looking tables in R. One can go around in a manual manner using `markdown` syntax or the visual editor if working with RStudio. I prefer to approach this task in a programmatic manner. For this document, I will use the `gt` package. 
+
+The goal for this table is to display the number and percentages of small, medium, and large penguins per species. 
+
+```{r penguins-per-size-and-species}
+
+data |> 
+    na.omit() |> 
+    select(species, size) |>
+    group_by(species) |> 
+    reframe(count = fct_count(size |> as_vector())) |> 
+    unnest(cols = c(count)) |> 
+    rename(size = f,
+           count = n) |> 
+    group_by(species) |> 
+    mutate(n = sum(count),
+           percentage = round(count/n*100, 2)) |> 
+    gt() |>
+    tab_header("Sizes per species")
+
+```
+
+#### Visualizations
+
+>> A picture is worth a thousand words
+
+```{r}
+
+data |> 
+    na.omit() |> 
+    ggplot(aes(x = size)) +
+    geom_bar(aes(fill = size)) +
+    facet_grid(~species) +
+    theme(legend.position = "none") +
+    labs(title = "Penguin sizes by species")
+
+```
+
+The plot readily revels that most captured penguins are _Adelie_ whereas _Chinstrap_ penguins were captured the least. It also shows a distribution of specimens captured by size. The chinstrap sample is pretty uniform across sizes, not so for Adelie and Gentoo penguins. 
+
+#### Reports 
+
+It is often the case that after a research cycle has been completed, a comprehensive report needs to be created to document the methods, analyses and findings. Sometime research workflows may require to produce reports periodically, i.e. the data changes, focused reports for specific audiences, changes in methods, etc. 
+
+A solution that allows for prose and code on the same document is an excellent option for creating documents that build their content on components that are subject to change.
+
+As a prototype, let's consider creating a document that reports the some of the content outlined earlier for a specific type of penguin. The document includes a brief paragraph, a table, and a visualization. The document also includes a parameter that specifies the type of penguin we want to create a report for. 
+
+A Quarto document, like the one you're are reading right now combines prose and code. The prose is a flavor of `markdown`. Quarto can work with a variety of languages such as `R`, `Python`, and `ObservableJS` among others. 
+
+The first required part of Quarto document is its `yaml` header which starts and ends with three dashes like so`---`.  The `yaml` header contains metadata needed to run the document. Among the data, we will include a `params` argument that is defaulted to "Adelie" but it can be changed at run time. 
+
+The file template is housed under the `reports` folder and it is named `penguin-summary.qmd`. Its `yaml` header looks like this
+
+```{}
+---
+title: "Penguin Summary"
+format: html
+params:
+  species: "Adelie"
+---
+
+```
+ 
+ 
+The rest of the document is a combination of prose and code need to convey the report's content. The code below uses the `quarto_render()` function. It takes as arguments the location of the templated file, the desired output format, and a list containing the species parameter. Quarto will perform some calculations that include the number of specimens, the maximum, minimum, and mean weight of the sample discriminated by the species parameter and knit it together with the text to produce a finalized report.
+
+
+```{r render-parametrized-report}
+#| eval: false
+
+quarto_render( here("reports/penguin-summary.qmd"), 
+               output_format = "pdf",
+               execute_params = list(species = "Chinstrap"))
+
+#check this post 
+#https://stackoverflow.com/questions/73571919/how-to-pass-logical-parameters-with-the-quarto-r-package-to-the-knitr-chunk-opti
+
+
+
+```
+
+
+
+### Modeling 
+
+
+
+### 
