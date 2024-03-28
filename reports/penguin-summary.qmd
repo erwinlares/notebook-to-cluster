@@ -1,0 +1,47 @@
+---
+title: "Penguin Summary"
+format: html
+params:
+  species: "Adelie"
+execute: 
+  echo: false
+  message: false
+  warning: false
+---
+
+# Speciment report for `r params$species`
+
+```{r}
+
+library(tidyverse)
+library(here)
+```
+
+
+```{r}
+
+data <- read_csv(here("data", "original-penguins.csv")) |> 
+    filter(species == params$species) 
+
+```
+
+There are `r nrow(data)` specimens.
+
+Heaviest specimen is `r max(data$body_mass_g, na.rm = TRUE) |> round(2)` g.
+
+Lightest specimen is `r min(data$body_mass_g, na.rm = TRUE) |> round(2)` g.
+
+Average weight is `r mean(data$body_mass_g, na.rm = TRUE) |> round(2)` g. 
+
+```{r}
+data |>
+    na.omit() |> 
+    ggplot(aes(x = body_mass_g)) + 
+    geom_bar() + 
+    labs(title = str_c("Body mass distribution for ", params$species, " penguins")) +
+    xlab("Body weight in g") +
+    ylab("Count")
+    
+
+```
+
