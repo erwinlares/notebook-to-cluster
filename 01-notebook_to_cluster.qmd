@@ -37,7 +37,7 @@ library(here)
 
 ## What this is about {#sec-page}
 
-What happens when your data grow too large for your laptop? That was the question that gave rise to this project we call _"From the Notebook to the Cluster_". 
+What happens when your data grow too large for your laptop? That was the question that gave rise to this project we call _"From the Notebook to the Cluster"_. 
 
 a.  This is a detailed documentation of the steps I took to bring a data science project from my laptop, to RCI's Workbench, and finally to an external cluster.
 b.  My goal is to create a walk-through that you --- the reader --- can follow, so you too can move your computing-intensive research to a place better suited for your needs.
@@ -54,43 +54,51 @@ flowchart LR
   A[Original<br/>Research] --> B(PRP)
   B --> C[running  <br/>on laptop  ]
   B --> D[running  <br/>on Workbench  ]
-  B --> E[Using  <br/>Job Launcher  ]
-  E --> F[launcher  <br/> locally  ]
-  E --> G[launcher on  <br/>external cluster  ]
+  B --> E[running on<br/>an external cluster  ]
 
 ```
 
-# The notebook half 
+# The notebook half  
 
-## 1 - A workflow running on my laptop
+## 1 - A workflow running on a laptop
 
-This project describes the work of **PRP**, the *Penguin Research Project*.  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007.
+This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007.
 
-It involves computing summarizing statistics, creating visualizations, fitting a classification model, and running predictions on new data.
+The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project  might be shared  with many analyses from various fields. 
 
-There are compelling reasons to run one's analysis on a personal computer. They are portable and powerful devices capable of crunching lots of data.
+The workflow outlined by PRP involved, digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
 
-However, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to creep in the hours needed to run, UW-Madison offers various options to address these needs.
+There are compelling reasons to run one's analysis on a personal computer. Modern laptops are portable and powerful devices capable of crunching lots of data.
+
+However, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute. 
 
 ### Ingest the data
 
-The first step is to get the data into whatever tool we intent to use for our analysis. In this case it is the R programming language. Future iteration of this document will include a Python version.
+The first step is to get the data into whatever tool we intent to use for our analysis. For the first iteration of this tutorial, it is the R programming language. Future iteration of this document will include a Python version.
 
 There are numerous ways in which data can be digested. This guide shows a few options 
 
-#### Data saved as a local flat file
+#### Data stored as a local flat file
+
+This involved storage that you physically connect to your machine. Typicall you have two options: harddrives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
 
 ```{r}
+#| echo: true
+#| message: false
 
 tic(msg = "local csv")
 data <- read_csv(file = here("data/original-penguins.csv"))
 toc()
 ```
 
-
 #### Data distributed as part of a package. 
 
+Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.package()` for instance. 
+Data distributed in this manner is easy to share with collaborators. Typically, we are talking about small datasets.
+
 ```{r}
+#|echo: true
+
 tic(msg = "package data")
 data <- palmerpenguins::penguins
 toc()
@@ -98,7 +106,10 @@ toc()
 
 #### Data read from a database 
 
+As data grows or multiples users require access to the same data, it is common to host the data in a database, rather than a set of flat files. 
+
 ```{r}
+#| echo: true
 
 con <- dbConnect(SQLite(), here("data/temp_db"))
 tic(msg = "database")
@@ -107,20 +118,30 @@ toc()
 dbDisconnect(con)
 ```
 
-#### Data using a *Globus endpoint*
+#### Data using a *Globus* endpoint
 
+The data may exist on a different server physically located next to you or on the other side of the planet. We recommend a service called Globus to facilitate data sharing. Globus allows users to create _endpoints_ to that allows collaborators access to that data. 
+
+In the example below, the data is access through an endpoint set up by PRP's scientist on a remote location. 
 
 ```{r}
+#| echo: true
+#| message: false 
 
-data <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/palmerpenguins.csv") |> 
-  filter(!is.na(sex))
+data <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/palmerpenguins.csv")
 
 ```
+
+::: callout-important
+Learn more about storage and sharing data with [ResearchDrive and Globus at UW-Madison](https://researchci.it.wisc.edu/).
+:::
 
 #### Data from an online source 
 
 
 ```{r}
+#| echo: true
+#| message: false
 
 #here the online source is the flat file store on a Google Drive folder
 #through a public link
@@ -134,24 +155,20 @@ toc()
 #### Other posibilities not explored 
 
 -   manual entry (avoid this like the plague)
--   instruments
+-   instruments (using a service account)
 -   data repositories
-
-
-::: callout-important
-Learn more about storage and sharing data with [ResearchDrive and Globus at UW-Madison](https://researchci.it.wisc.edu/).
-:::
+-   S3 bucket
 
 
 ## Workflow on a laptop
 
-The workflow I'll follow is fairly straight forward. I'll follow the diagram below.
+The workflow I'll follow is fairly straight forward. The diagram below details the individual steps I'll follow. 
 
 ```{mermaid}
 %%| fig-width: 8
 
 flowchart LR
-  A(load<br/>data) --> B(clean & prep<br/>data)
+  A(ingest<br/>data) --> B(clean & prep<br/>data)
   B --> C(summarize<br/>data)
   C --> D(visualize<br/>data)
   D --> E(communicate<br/>findings)
@@ -163,7 +180,7 @@ flowchart LR
 
 ### Ingesting the data
 
-From all the options listed in the previous section, we'll model grabbing the data from an online source, which repeated here:
+From all the options listed in the previous section, we'll model grabbing the data from an online source, which is repeated here:
 
 
 ```{r}
@@ -171,15 +188,13 @@ From all the options listed in the previous section, we'll model grabbing the da
 #here the online source is the flat file store on a Google Drive folder
 #through a public link
 
-tic(msg = "data from an online source")
 data <- read_csv("https://go.wisc.edu/9pv6q1")
-toc()
 
 ```
 
 ### Cleaning and Data prep 
 
-Once the data is ingested, a particular analysis may require cleaning, reshaping, or creating new variables. 
+Once the data is ingested, it may require cleaning, reshaping, or creating new variables to complete a particular analysis. 
 
 In this particular case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to _snake/_case_, make them more descriptive and we'll get rid of some unnecessary variables. 
 
@@ -347,6 +362,7 @@ The rest of the document is a combination of prose and code need to convey the r
 
 ```{r render-parametrized-report}
 #| eval: false
+#| echo: fenced
 
 quarto_render( here("reports/penguin-summary.qmd"), 
                output_format = "pdf",
@@ -361,9 +377,7 @@ quarto_render( here("reports/penguin-summary.qmd"),
 
 ## Performing calculations
 
-Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data.  
-
-In this case, we are interested in the measures of tendency for each of the species of penguins in the dataset.  
+Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data. For this use case, we are interested in the measures of tendency for each of the species of penguins in the dataset.  
 
 Below I show different approaches to this problem. From worst to --- arguably --- best.
 
@@ -374,7 +388,7 @@ Explicit calculations entails splitting the data into the relevant subsets - her
 ```{r}
 #| echo: true
 #| label: manual-ling 
-#| output-location: "slide"
+
 
 # mbl: mean bill length in mm 
 # sdbl: standard deviation of bill length
@@ -619,7 +633,7 @@ Finally, the four approaches above are not an exhaustive list of your choices. F
 
 ## Creating a predictive model
 
-The original Palmer penguins were distributed among three islands. For our simulation, we are going to pretend that *Climate Change* has forced these three species of penguins to move to _Janus_ island, a location further south that still maintain the temperature the penguins are accustomed to. 
+The original Palmer penguins were distributed among three islands. For our simulation, we are going to explore the scenario were *Climate Change* has forced these three species of penguins to move to _Janus_ island, a location further south that still maintain the temperature the penguins are accustomed to. 
 
 
 Penguins researchers are interested in classifying the wave of penguins migrating to Janus island. The classification model is based on the original data set.
@@ -1394,3 +1408,8 @@ obs_50000 <- toc() |> pluck(4)
 
 
 ```
+
+
+# Running on Workbench
+
+## What is _Workbench_?
