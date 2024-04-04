@@ -1,15 +1,18 @@
 ---
 title: "from the <br/>Notebook<br/>to the<br/>Cluster"
 author: "Erwin Lares"
+affiliation: "Research Cyberinfrastructure at DoIT"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 format: 
   html:
     toc: true
     toc-depth: 4
+    code-fold: true
 execute: 
   echo: false
   message: false
   warning: false
+  
 ---
 
 ```{r}
@@ -37,18 +40,20 @@ library(here)
 
 ## What this is about {#sec-page}
 
-What happens when your data grow too large for your laptop? That was the question that gave rise to this project we call _"From the Notebook to the Cluster"_. 
+What happens when your data grows too large for your laptop? That was the question that gave rise to this project we call _"From the Notebook to the Cluster"_.
 
-a.  This is a detailed documentation of the steps I took to bring a data science project from my laptop, to RCI's Workbench, and finally to an external cluster.
-b.  My goal is to create a walk-through that you --- the reader --- can follow, so you too can move your computing-intensive research to a place better suited for your needs.
-c.  In the process, I'll also showcase some common practices as well as tools available to you that can make your work easier.
+My goal, for the first half, is to create a walk-through that documents the steps I took to load the data, analyze it, and produce research artifacts. In the second half, I document the changes to the workflow so that the analysis can be shipped to an external cluster. 
 
-The document, well ... documents the steps I took to load my data, analyze, and produce research artifacts. It also documents the steps needed to take to be able to ship my analysis once the data grew beyond the capabilities of my laptop. 
+
+
+Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which are intended to make work easier. 
+
 
 ## Roadmap
 
 ```{mermaid}
 %%| fig-width: 8
+%%| label: roadmap
 
 flowchart LR
   A[Original<br/>Research] --> B(PRP)
@@ -62,15 +67,15 @@ flowchart LR
 
 ## 1 - A workflow running on a laptop
 
-This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007.
+This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts. 
 
 The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project  might be shared  with many analyses from various fields. 
 
-The workflow outlined by PRP involved, digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
+The workflow outlined by PRP involved digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
 
 There are compelling reasons to run one's analysis on a personal computer. Modern laptops are portable and powerful devices capable of crunching lots of data.
 
-However, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute. 
+However, as we will see, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute. 
 
 ### Ingest the data
 
@@ -80,7 +85,7 @@ There are numerous ways in which data can be digested. This guide shows a few op
 
 #### Data stored as a local flat file
 
-This involved storage that you physically connect to your machine. Typicall you have two options: harddrives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
+This involved storage that you physically connect to your machine. Typically you have two options: harddrives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
 
 ```{r}
 #| echo: true
@@ -143,8 +148,8 @@ Learn more about storage and sharing data with [ResearchDrive and Globus at UW-M
 #| echo: true
 #| message: false
 
-#here the online source is the flat file store on a Google Drive folder
-#through a public link
+#here the online source is the flat file stored on a Google Drive folder
+#made accesible through through a public link
 
 tic(msg = "data from an online source")
 data <- read_csv("https://go.wisc.edu/9pv6q1")
@@ -160,9 +165,11 @@ toc()
 -   S3 bucket
 
 
-## Workflow on a laptop
+## Analysis running on a laptop
 
-The workflow I'll follow is fairly straight forward. The diagram below details the individual steps I'll follow. 
+The workflow I'll follow is fairly straight forward. The diagram below details the individual steps I'll follow.
+
+The idea 
 
 ```{mermaid}
 %%| fig-width: 8
@@ -291,9 +298,15 @@ data <- data |>
 
 
 
-### Communicating findings and summarizing the data
+### Communicating findings
 
 An analysis can result in a number of _research artifacts_. Common among those are tables, visualization, and models. These artifacts can be subsequently shared in a variety of formats such as printed documents, online documents, dashboards, and APIs just to name a few.
+
+
+#### Summarizing findings via tables 
+
+
+Tables are a concise way to  systematically organize large amounts of data, condensing complex details into a more manageable form that is easy to access. 
 
 There is a variety of choices to create great looking tables in R. One can go around in a manual manner using `markdown` syntax or the visual editor if working with RStudio. I prefer to approach this task in a programmatic manner. For this document, I will use the `gt` package. 
 
@@ -316,7 +329,7 @@ data |>
 
 ```
 
-### Visualize the data
+#### Visualize the data
 
 >> A picture is worth a thousand words
 
@@ -334,7 +347,7 @@ data |>
   facet_grid( ~ island)
 ```
 
-### Reporting and communicating findings 
+#### Reporting and communicating findings 
 
 It is often the case that after a research cycle has been completed, a comprehensive report needs to be created to document the methods, analyses and findings. Sometime research workflows may require to produce reports periodically, i.e. the data changes, focused reports for specific audiences, changes in methods, etc. 
 
@@ -375,13 +388,13 @@ quarto_render( here("reports/penguin-summary.qmd"),
 
 ```
 
-## Performing calculations
+### Performing calculations
 
 Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data. For this use case, we are interested in the measures of tendency for each of the species of penguins in the dataset.  
 
 Below I show different approaches to this problem. From worst to --- arguably --- best.
 
-### Method 1: explicit calculations
+#### Method 1: explicit calculations
 
 Explicit calculations entails splitting the data into the relevant subsets - here each species - and carry out the required calculations for each subgroup.
 
@@ -450,7 +463,7 @@ manual_time <- toc() |> pluck(4)
 ```
 
 ::: callout-tip
-## The DRY principle
+#### The DRY principle
 
 > "Don't repeat yourself" (DRY) is a principle of software development aimed at reducing repetition of software patterns, replacing it with abstractions or using data normalization to avoid redundancy.
 
@@ -460,7 +473,7 @@ manual_time <- toc() |> pluck(4)
 
 :::
 
-### Applying the DRY principle
+#### Applying the DRY principle
 
 Carrying out calculations manually can be costly in time; even with cut and paste! In addition, manually copying code is prone to errors and typos and is hard to maintain. 
 
@@ -468,7 +481,7 @@ On the other hand, parsimonious code is very explicit in what it does.
 
 
 
-### Method 2: for-loops
+#### Method 2: for-loops
 
 If you look closely at the code showed before, you'll see that a good part of the code in all the calculations is shared. A better choice is to use a for-loop ranging over the penguin species in the dataset.
 
@@ -505,7 +518,7 @@ forloop_time <- toc() |> pluck(4)
 ```
 
 
-### Method 3: using `dplyr` syntax to manage grouping and aggregation
+#### Method 3: using `dplyr` syntax to manage grouping and aggregation
 
 Another option is to take advantage of `tidyverse's dplyr` syntax to deal with subsetting and aggregation.
 
@@ -538,7 +551,7 @@ dplyr_time <- toc() |> pluck(4)
 
 ```
 
-### Method 3: abstracting with the purrr package
+#### Method 4: abstracting with the purrr package
 
 We can take DRY-er approach and encapsulate the calculations using a function.
 
@@ -599,7 +612,7 @@ map_time <- toc() |> pluck(4)
 
 ```
 
-### Comparing the four methods
+#### Comparing the four methods
 
 Let's compare how long each method took to perform the calculations.
 
@@ -624,14 +637,14 @@ tibble(method = c("manual_ly",
 There is a tension between clarity and performance. One can be as parsimonious as possible, explicitly writing down every calculation we want carried out, but that comes with loss of performance and a propensity to make mistakes.
 
 
-### What's the better approach? 
+#### What's the better approach? 
 
 We have explored iterating using for-loops, dplyr syntax, and purrr's map functions. Each approach has advantages and disadvantages. For instance, I prefer the purrr and dplyr's approaches because of its readability.Ultimately, the size of your data, the requirements of your calculations, or the prospects of maintaining the code might tip you in one direction over others.
 
 Finally, the four approaches above are not an exhaustive list of your choices. For dplyr-like approaches that are more performant check the `datatable` package. For purrr-like approaches, you can also explore the `apply` family of function from base R.
 
 
-## Creating a predictive model
+### Creating a predictive model
 
 The original Palmer penguins were distributed among three islands. For our simulation, we are going to explore the scenario were *Climate Change* has forced these three species of penguins to move to _Janus_ island, a location further south that still maintain the temperature the penguins are accustomed to. 
 
@@ -670,7 +683,7 @@ With this fitted model in place, we can feed penguins measurements to it and get
 
 
 
-## Utilizing the model to predict new specimens
+### Utilizing the model to predict new specimens
 
 ```{r}
 # sim_data <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1HEQa23hR202egPcnyAtQHGyPRw1WWv61H6aHnAhjcrc/edit#gid=519943868")
@@ -702,7 +715,7 @@ obs_10 <- toc() |> pluck(4)
 ```
 
 
-## What happens when your data grows?
+### What happens when your data grows?
 
 ```{r}
   ggplot() + 
@@ -714,7 +727,7 @@ obs_10 <- toc() |> pluck(4)
 
 ---
 :::callout-tip
-## Benchmarking summary calculations
+### Benchmarking summary calculations
 
 The next number of calculations are repeats of what we have done previously varying the number of observations. I will benchmark 10, 100, 1000, 10k, 50k, and 100k observation. The expectation is that as the number of observations increase, the time required to perform said calculations will increase. Eventually, if you are in a field that generates large amounts of data, running your analyses in your laptop becomes prohibitely long
 

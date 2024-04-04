@@ -1,6 +1,8 @@
 ---
 title: "Penguin Summary"
-format: html
+format:
+  html:
+    code-fold: true
 params:
   species: "Adelie"
 execute: 
@@ -9,7 +11,7 @@ execute:
   warning: false
 ---
 
-# Speciment report for `r params$species`
+
 
 ```{r}
 
@@ -17,6 +19,11 @@ library(tidyverse)
 library(here)
 ```
 
+```{r}
+knitr::include_graphics(here("images", "lter_penguins.png"))
+```
+
+# Speciment report for `r params$species`
 
 ```{r}
 
@@ -25,13 +32,14 @@ data <- read_csv(here("data", "original-penguins.csv")) |>
 
 ```
 
+
 There are `r nrow(data)` specimens.
 
 Heaviest specimen is `r max(data$body_mass_g, na.rm = TRUE) |> round(2)` g.
 
 Lightest specimen is `r min(data$body_mass_g, na.rm = TRUE) |> round(2)` g.
 
-Average weight is `r mean(data$body_mass_g, na.rm = TRUE) |> round(2)` g. 
+Average weight is `r mean(data$body_mass_g, na.rm = TRUE) |> round(2)` g.
 
 ```{r}
 data |>
@@ -44,4 +52,3 @@ data |>
     
 
 ```
-
