@@ -69,7 +69,7 @@ flowchart LR
 
 This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts. 
 
-The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project  might be shared  with many analyses from various fields. 
+The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project  might be use useful to researchers from various fields. 
 
 The workflow outlined by PRP involved digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
 
@@ -81,11 +81,11 @@ However, as we will see, when the data start to increase in orders of magnitude 
 
 The first step is to get the data into whatever tool we intent to use for our analysis. For the first iteration of this tutorial, it is the R programming language. Future iteration of this document will include a Python version.
 
-There are numerous ways in which data can be digested. This guide shows a few options 
+There are numerous ways in which data can be digested. This guide shows a few options. After each method of reading data is completed, the elapsed time is provided to give an idea how long it takes to complete the task.
 
 #### Data stored as a local flat file
 
-This involved storage that you physically connect to your machine. Typically you have two options: harddrives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
+This involved storage that you physically connect to your machine. Typically we are talking about hard drives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
 
 ```{r}
 #| echo: true
@@ -99,33 +99,48 @@ toc()
 #### Data distributed as part of a package. 
 
 Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.package()` for instance. 
-Data distributed in this manner is easy to share with collaborators. Typically, we are talking about small datasets.
+
+Data distributed in this manner is easy to share with collaborators. Typically, we are talking about small datasets though.
 
 ```{r}
 #|echo: true
 
-tic(msg = "package data")
+tic(msg = "csv from a package")
 data <- palmerpenguins::penguins
 toc()
 ```
 
 #### Data read from a database 
 
-As data grows or multiples users require access to the same data, it is common to host the data in a database, rather than a set of flat files. 
+As data grows or multiples users require access to the same data, it is common to host the data in a database, rather than a set of flat files. This method involves a few extra steps, but the potential gains are enormous.
+
+Things to keep an eye out for:  
+- a database connection needs to be established.  
+- each type of database required its own driver.  
+- it is advisable to close the connection to the database after you are done. 
+
 
 ```{r}
 #| echo: true
 
 con <- dbConnect(SQLite(), here("data/temp_db"))
-tic(msg = "database")
+tic(msg = "csv from a database")
 data <- dbGetQuery(con, "select * from penguins")
 toc()
 dbDisconnect(con)
 ```
 
+::: {.callout-tip collapse="true" title="Choosing the right `read*csv()`"}
+
+When reading csv files, be mindful that size does matter. For smaller size files, go with `read.csv()`. Below around 1 MB `read.csv()` is actually faster than `read_csv()` 
+
+:::
+
+
+
 #### Data using a *Globus* endpoint
 
-The data may exist on a different server physically located next to you or on the other side of the planet. We recommend a service called Globus to facilitate data sharing. Globus allows users to create _endpoints_ to that allows collaborators access to that data. 
+The data may exist on a different server physically located next to you or on the other side of the planet. We recommend  `Globus` to facilitate data sharing. `Globus` allows users to create _endpoints_ to that allows collaborators access to that data. 
 
 In the example below, the data is access through an endpoint set up by PRP's scientist on a remote location. 
 
@@ -133,7 +148,9 @@ In the example below, the data is access through an endpoint set up by PRP's sci
 #| echo: true
 #| message: false 
 
+tic(msg = "csv from a Globus endpoint")
 data <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/palmerpenguins.csv")
+toc()
 
 ```
 
@@ -143,33 +160,32 @@ Learn more about storage and sharing data with [ResearchDrive and Globus at UW-M
 
 #### Data from an online source 
 
+Here the online source is the flat file stored on a Google Drive folder made accessible through through a public link. Depending on the type of data you are working with, some options may or may not be available to you. 
 
 ```{r}
 #| echo: true
 #| message: false
 
-#here the online source is the flat file stored on a Google Drive folder
-#made accesible through through a public link
-
-tic(msg = "data from an online source")
+tic(msg = "csv from an online source")
 data <- read_csv("https://go.wisc.edu/9pv6q1")
 toc()
 
 ```
 
-#### Other posibilities not explored 
+#### Other posibilities not explored (yet)
 
--   manual entry (avoid this like the plague)
--   instruments (using a service account)
--   data repositories
--   S3 bucket
+-   manual entry (avoid this like the plague)   
+-   instruments (using a service account)   
+-   data repositories   
+-   S3 buckets    
+-   GoogleDrive or similar service    
 
 
 ## Analysis running on a laptop
 
 The workflow I'll follow is fairly straight forward. The diagram below details the individual steps I'll follow.
 
-The idea 
+As mentioned earlier, we believe that these steps are common among most workflows so that regardless of your field, you would probably need to follow these steps in some shape or form.   
 
 ```{mermaid}
 %%| fig-width: 8
@@ -201,13 +217,13 @@ data <- read_csv("https://go.wisc.edu/9pv6q1")
 
 ### Cleaning and Data prep 
 
-Once the data is ingested, it may require cleaning, reshaping, or creating new variables to complete a particular analysis. 
+Once the data is ingested, it often requires cleaning, reshaping, or creating new variables to complete a particular analysis. 
 
-In this particular case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to _snake/_case_, make them more descriptive and we'll get rid of some unnecessary variables. 
+In this case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to _snake/_case_, make them more descriptive and we'll get rid of some unnecessary variables. 
 
 #### a - cleaning names
 
-The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally only the new variables are kept. 
+The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally all missing values are dropped with `na_omit()` and only the new variables are kept. 
 
 For an alternative way to accomplish this, consider using the `clean_names()` function from the `janitor` package which implements the _Style Guide_ mentioned above.  
 
@@ -244,7 +260,7 @@ data <- data |>
 
 #### b - creating new variables 
 
-As part of the analysis, we may need to create new variables. In our case, we want to classify each specimen as small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is at or below the 1st quartile, that penguin is _small_, above the 1st quartile and at or below the 3rd quartile, _medium_. Finally, any specimen above the 3th will be classified as _large_. 
+As part of the analysis, we may need to create new variables. In our case, we want to classify each specimen as small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is _tiny_. Above the 1st quartile and at or below the 2nd quartile, _small_. Above the 2nd quartile and at or below the 3rd quartile, _medium_ Finally, any specimen above the 3th will be classified as _large_. 
 
 - tiny: 0% < penguin <= 25%
 - small: 25% < penguin <= 50%
@@ -333,7 +349,7 @@ data |>
 
 >> A picture is worth a thousand words
 
-This scatter plot shows the three species of Penguins. Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed.
+These boxplots show the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island. 
 
 
 ```{r}
@@ -373,6 +389,8 @@ params:
 
 The rest of the document is a combination of prose and code need to convey the report's content. The code below uses the `quarto_render()` function. It takes as arguments the location of the templated file, the desired output format, and a list containing the species parameter. Quarto will perform some calculations that include the number of specimens, the maximum, minimum, and mean weight of the sample discriminated by the species parameter and knit it together with the text to produce a finalized report.
 
+The code below can be adjusted at runtime to produce a report _different_ from the default value. This can be very useful to create reports targeted to a specific stakeholder audience. For instance, the code changed from the default value "Adelie" to "Chinstrap". 
+
 ```{r render-parametrized-report}
 #| eval: false
 #| echo: fenced
@@ -390,13 +408,24 @@ quarto_render( here("reports/penguin-summary.qmd"),
 
 ### Performing calculations
 
-Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data. For this use case, we are interested in the measures of tendency for each of the species of penguins in the dataset.  
+Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data. For this use case, we are interested in the measures of tendency for each of the species of penguins in the dataset.
+
+- mbl: mean bill length in mm  
+- sdbl: standard deviation of bill length  
+- mbd: mean bill depth in mm  
+- sdbd: standard deviation of bill depth  
+- mfl: mean flipper length in mm  
+- sdfl: standard deviation of flipper length  
+- mbm: mean body mass in g  
+- sdbm: standard deviation of body mass  
+
+
 
 Below I show different approaches to this problem. From worst to --- arguably --- best.
 
 #### Method 1: explicit calculations
 
-Explicit calculations entails splitting the data into the relevant subsets - here each species - and carry out the required calculations for each subgroup.
+Explicit calculations entails splitting the data into the relevant subsets - here each species - and carry out the required calculations for each subgroup. 
 
 ```{r}
 #| echo: true
@@ -462,8 +491,7 @@ manual_time <- toc() |> pluck(4)
 
 ```
 
-::: callout-tip
-#### The DRY principle
+::: {.callout-important collapse="true" title="The DRY Principle"}
 
 > "Don't repeat yourself" (DRY) is a principle of software development aimed at reducing repetition of software patterns, replacing it with abstractions or using data normalization to avoid redundancy.
 
@@ -478,7 +506,6 @@ manual_time <- toc() |> pluck(4)
 Carrying out calculations manually can be costly in time; even with cut and paste! In addition, manually copying code is prone to errors and typos and is hard to maintain. 
 
 On the other hand, parsimonious code is very explicit in what it does.
-
 
 
 #### Method 2: for-loops
@@ -520,7 +547,7 @@ forloop_time <- toc() |> pluck(4)
 
 #### Method 3: using `dplyr` syntax to manage grouping and aggregation
 
-Another option is to take advantage of `tidyverse's dplyr` syntax to deal with subsetting and aggregation.
+Another option is to take advantage of `tidyverse's dplyr` syntax to deal with subsetting and aggregation. One of the advantages of `dplyr` syntax is how human-readble it is. 
 
 
 
@@ -553,10 +580,7 @@ dplyr_time <- toc() |> pluck(4)
 
 #### Method 4: abstracting with the purrr package
 
-We can take DRY-er approach and encapsulate the calculations using a function.
-
-Good news is that the code that makes up the function is practically written already.
-
+We can take DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subset via a lambda abstraction. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take. 
 
 
 ```{r}
@@ -583,7 +607,7 @@ summarize_penguin_population <- function(df) {
 
 
 ::: callout-important
--   There is an additional step involved: turning the groups into `lists` objects using `group_split()`.
+-   There is an additional step involved: turning the groups into `list` objects using the `split()` function.
 -   The function `map()` is the magic sauce, it requires as arguments the individual lists and a function to be applied to each element of the list.
 :::
 
@@ -634,7 +658,7 @@ tibble(method = c("manual_ly",
     title = "Time for calculations by method")
 
 ```
-There is a tension between clarity and performance. One can be as parsimonious as possible, explicitly writing down every calculation we want carried out, but that comes with loss of performance and a propensity to make mistakes.
+There is a tension between clarity and performance. One can be as parsimonious as possible, explicitly writing down every calculation we want carried out, but that comes with loss of performance and a propensity to make mistakes. The `dplyr` and `map` options require a bit of abstracting away from the individual steps. They also required additional steps in order to be implemented, such as creating the function to be mapped and splitting the data into the appropriate subsets. 
 
 
 #### What's the better approach? 
@@ -665,7 +689,9 @@ filtered_penguins <- data |>
   select(species, ends_with("mm"), body_mass_g) |> 
   mutate(species = as_factor(species))
 
-tic("Fit model")
+tic.clear()
+tic("Fitting model")
+
 model <- rand_forest() %>% 
   set_engine("ranger") %>% 
   set_mode("classification") %>% 
@@ -678,17 +704,20 @@ fit_time <- toc() |> pluck(4)
 
 
 ::: callout-note
-With this fitted model in place, we can feed penguins measurements to it and get an estimated penguin species.
+With this fitted model in place, we can feed new penguins measurements to it and ask the model what species of penguins each new specimen is. 
 :::
 
 
 
 ### Utilizing the model to predict new specimens
 
+Our PRP collaborators are busy collecting and measuring penguins on Janus island. Those measurements are made available through a `Globus` endpoint
+
+
 ```{r}
 # sim_data <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1HEQa23hR202egPcnyAtQHGyPRw1WWv61H6aHnAhjcrc/edit#gid=519943868")
 
-janus_penguins <- read_csv("/Volumes/lares/public_data/janus_penguins.csv")
+janus_penguins <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/janus_penguins.csv")
 
 
 tic()
@@ -1423,6 +1452,6 @@ obs_50000 <- toc() |> pluck(4)
 ```
 
 
-# Running on Workbench
+# 2 - Running on Workbench
 
 ## What is _Workbench_?
