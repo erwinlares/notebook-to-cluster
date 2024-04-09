@@ -203,10 +203,11 @@ flowchart LR
 
 ### Ingesting the data
 
-From all the options listed in the previous section, we'll model grabbing the data from an online source, which is repeated here:
+From all the options listed in the previous section, we'll model grabbing the data from an online source, which is repeated below.
 
 
 ```{r}
+#| echo: true
 
 #here the online source is the flat file store on a Google Drive folder
 #through a public link
@@ -228,7 +229,7 @@ The code cleans the variable names manually by choosing what variables to keep w
 For an alternative way to accomplish this, consider using the `clean_names()` function from the `janitor` package which implements the _Style Guide_ mentioned above.  
 
 ```{r}
-
+#| echo: true
 data <- data |>
     select(Species, 
            Island,
@@ -270,7 +271,7 @@ As part of the analysis, we may need to create new variables. In our case, we wa
 One possible way to accomplish this is detailed below.
 
 ```{r}
-
+#| echo: true  
 p_quartiles <- function(df) {
 #p-quartiles() takes a df and bins the observations into the quartiles 
     df |> 
@@ -292,6 +293,7 @@ quartile_data <- data |>
 The resulting table, named `quartile data` contains the cutout values segregated by species. 
 
 ```{r}
+#| echo: true
 quartile_data |> 
     gt() |>
     tab_header("Cutout values for weight per species")
@@ -301,6 +303,7 @@ quartile_data |>
 We will create a new variable `size` of type factor which contains the size label of each specimen.
 
 ```{r}
+#| echo: true
 data <- data |> 
     group_by(species) |> 
     mutate(size = case_when(
@@ -329,6 +332,7 @@ There is a variety of choices to create great looking tables in R. One can go ar
 The goal for this table is to display the number and percentages of small, medium, and large penguins per species. 
 
 ```{r penguins-per-size-and-species}
+#| echo: true
 
 data |> 
     select(species, size) |>
@@ -354,13 +358,15 @@ These boxplots show the weight distribution of all three species of Penguins, di
 
 ```{r}
 #| echo: true
-#| output-location: "slide"
+
 data |> 
   ggplot(aes(x = species, y = body_mass_g, color = species)) +
   geom_jitter(alpha = 0.25) +
   geom_boxplot(alpha = 0.25) +
   theme_minimal() + 
-  facet_grid( ~ island)
+  facet_grid( ~ island) +
+  xlab("body mass in g")
+
 ```
 
 #### Reporting and communicating findings 
@@ -393,7 +399,7 @@ The code below can be adjusted at runtime to produce a report _different_ from t
 
 ```{r render-parametrized-report}
 #| eval: false
-#| echo: fenced
+
 
 quarto_render( here("reports/penguin-summary.qmd"), 
                output_format = "pdf",
@@ -426,6 +432,8 @@ Below I show different approaches to this problem. From worst to --- arguably --
 #### Method 1: explicit calculations
 
 Explicit calculations entails splitting the data into the relevant subsets - here each species - and carry out the required calculations for each subgroup. 
+
+
 
 ```{r}
 #| echo: true
@@ -486,7 +494,7 @@ data |>
     sdbm = sd(body_mass_g)
     )
 
-manual_time <- toc() |> pluck(4)
+manual_time <- toc()
 
 
 ```
@@ -539,7 +547,7 @@ for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
 
 }
   
-forloop_time <- toc() |> pluck(4)
+forloop_time <- toc()
 
 
 ```
@@ -572,7 +580,7 @@ data |>
             sdbm = sd(body_mass_g)
             )
 
-dplyr_time <- toc() |> pluck(4)
+dplyr_time <- toc()
 
 
 
@@ -580,11 +588,14 @@ dplyr_time <- toc() |> pluck(4)
 
 #### Method 4: abstracting with the purrr package
 
-We can take DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subset via a lambda abstraction. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take. 
+We can take a DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subset via a lambda function. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take. 
 
 
 ```{r}
 #| echo: true
+
+#encapsulating the code in a function
+#the function takes the subset of the data as an dataframe argument 
 
 summarize_penguin_population <- function(df) {
 
@@ -622,17 +633,18 @@ tic.clear()
 tic("Map calculations") 
 
 #this was my initial thought, 
-# data |> 
-#   group_by(species) |>
-#   group_split() |>
-#   map(summarize_penguin_population)
-
 data |>
-    split(data$species) |> 
-    map(summarize_penguin_population) |> 
-    bind_rows()
+  group_by(species) |>
+  group_split() |>
+  map(summarize_penguin_population) |> 
+  bind_rows()
 
-map_time <- toc() |> pluck(4)
+# data |>
+#     split(data$species) |> 
+#     map(summarize_penguin_population) |> 
+#     bind_rows()
+
+map_time <- toc()
 
 ```
 
@@ -645,25 +657,40 @@ Let's compare how long each method took to perform the calculations.
 #| include: true
 #| label: calculations-by-method
 
-tibble(method = c("manual_ly",
-                  "forloop_ly",
-                  "group_by_ly",
-                  "map_ly"), 
-       duration = c(manual_time,
-                    forloop_time,
-                    dplyr_time,
-                    map_time)) |> 
+#the factor function called and the explicit level assignment are needed to 
+#prevent ggplot from reordering the values in alphabetic order
+
+times_by_method <- tibble(method = factor(c("manual_ly",
+                                      "forloop_ly",
+                                      "group_by_ly",
+                                      "map_ly"),
+                                    levels = c("manual_ly",
+                                      "forloop_ly",
+                                      "group_by_ly",
+                                      "map_ly")), 
+                           duration = c(manual_time[[2]] - manual_time[[1]],
+                                        forloop_time[[2]] - forloop_time[[1]],
+                                        dplyr_time[[2]] - dplyr_time[[1]],
+                                        map_time[[2]] - map_time[[1]] )) 
+times_by_method |> 
   gt() |> 
   tab_header(
     title = "Time for calculations by method")
 
+times_by_method |> 
+  ggplot(aes(x = method, y = duration, fill = method))+
+  geom_col() +
+  ylab("duration in seconds")
+
 ```
+
+
 There is a tension between clarity and performance. One can be as parsimonious as possible, explicitly writing down every calculation we want carried out, but that comes with loss of performance and a propensity to make mistakes. The `dplyr` and `map` options require a bit of abstracting away from the individual steps. They also required additional steps in order to be implemented, such as creating the function to be mapped and splitting the data into the appropriate subsets. 
 
 
 #### What's the better approach? 
 
-We have explored iterating using for-loops, dplyr syntax, and purrr's map functions. Each approach has advantages and disadvantages. For instance, I prefer the purrr and dplyr's approaches because of its readability.Ultimately, the size of your data, the requirements of your calculations, or the prospects of maintaining the code might tip you in one direction over others.
+We have explored iterating using for-loops, dplyr syntax, and purrr's map functions. Each approach has advantages and disadvantages. For instance, I prefer the purrr and dplyr's approaches because of its readability. Ultimately, the size of your data, the requirements of your calculations, or the prospects of maintaining the code might tip you in one direction over others.
 
 Finally, the four approaches above are not an exhaustive list of your choices. For dplyr-like approaches that are more performant check the `datatable` package. For purrr-like approaches, you can also explore the `apply` family of function from base R.
 
@@ -680,11 +707,10 @@ Penguins researchers are interested in classifying the wave of penguins migratin
 ```{r}
 #| echo: true
 #| include: true
-#| code-line-numbers: "4, 7-15"
-#| output-location: "slide"
 
 
-filtered_penguins <- data |>  
+
+filtered_penguins <- read_csv(here("data/original-penguins.csv")) |>
   drop_na(ends_with("mm")) |> 
   select(species, ends_with("mm"), body_mass_g) |> 
   mutate(species = as_factor(species))
@@ -692,12 +718,12 @@ filtered_penguins <- data |>
 tic.clear()
 tic("Fitting model")
 
-model <- rand_forest() %>% 
-  set_engine("ranger") %>% 
-  set_mode("classification") %>% 
+model <- rand_forest() |> 
+  set_engine("ranger") |> 
+  set_mode("classification") |> 
   fit(species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g, data = filtered_penguins)
 
-fit_time <- toc() |> pluck(4)
+fit_time <- toc()
 
 ```
 
@@ -713,11 +739,11 @@ With this fitted model in place, we can feed new penguins measurements to it and
 
 Our PRP collaborators are busy collecting and measuring penguins on Janus island. Those measurements are made available through a `Globus` endpoint
 
-
+Using the model created earlier to predict what species of a new penguin specimen is is easy. The code below reads the new data from Janus island
 ```{r}
 # sim_data <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1HEQa23hR202egPcnyAtQHGyPRw1WWv61H6aHnAhjcrc/edit#gid=519943868")
 
-janus_penguins <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/janus_penguins.csv")
+janus_penguins <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/1M_penguins.csv")
 
 
 tic()
@@ -726,26 +752,28 @@ predict(model,
         new_data = slice_sample(.data = head(janus_penguins),
                                 n = 10,
                                 replace = FALSE),
-        type = "prob")
+        type = "prob")  #type = "class" returns a the type of penguin rather than the prob.,
 
 toc()
 ```
 
 
 ```{r}
-sim_data_10 <- head(janus_penguins, n = 10)
+sim_data_10 <- slice_sample(janus_penguins, n = 10)
 
 tic("10 observations")
-sim_data_10 %>%
-bind_cols(predict(model, new_data = sim_data_10)) %>% 
+sim_data_10 |>
+bind_cols(predict(model, new_data = sim_data_10)) |>
   count(species, .pred_class) |> 
   mutate(sample_size = nrow(sim_data_10))
-obs_10 <- toc() |> pluck(4)
+obs_10 <- toc()
 ```
 
 
 ### What happens when your data grows?
 
+
+Not sure what the point of this plot is ...   s
 ```{r}
   ggplot() + 
   geom_density(mapping = aes(x = flipper_length_mm, color = species), 
@@ -758,17 +786,22 @@ obs_10 <- toc() |> pluck(4)
 :::callout-tip
 ### Benchmarking summary calculations
 
-The next number of calculations are repeats of what we have done previously varying the number of observations. I will benchmark 10, 100, 1000, 10k, 50k, and 100k observation. The expectation is that as the number of observations increase, the time required to perform said calculations will increase. Eventually, if you are in a field that generates large amounts of data, running your analyses in your laptop becomes prohibitely long
+The next number of calculations are repeats of what we have done previously varying the number of observations. I will benchmark 10, 100, 1000, 10k, 50k, and 100k observation. The expectation is that as the number of observations increase, the time required to perform said calculations will increase. Eventually, if you are in a field that generates large amounts of data, running your analyses in your laptop becomes prohibitively long.
 
 :::
 
 
 ```{r}
 #| label: slicing 
+
+sim_data_10 <- slice_sample(.data = janus_penguins, n = 10, replace = TRUE)
 sim_data_100 <- slice_sample(.data = janus_penguins, n = 100, replace = TRUE)
-sim_data_1000 <- slice_sample(.data = janus_penguins, n = 1000, replace = TRUE)
-sim_data_10000 <- slice_sample(.data = janus_penguins, n = 10000, replace = TRUE)
-sim_data_50000 <- slice_sample(.data = janus_penguins, n = 50000, replace = TRUE)
+sim_data_1k <- slice_sample(.data = janus_penguins, n = 1000, replace = TRUE)
+sim_data_10k <- slice_sample(.data = janus_penguins, n = 10000, replace = TRUE)
+sim_data_50k <- slice_sample(.data = janus_penguins, n = 50000, replace = TRUE)
+sim_data_100k <- slice_sample(.data = janus_penguins, n = 100000, replace = TRUE)
+sim_data_500k <- slice_sample(.data = janus_penguins, n = 500000, replace = TRUE)
+sim_data_1M <-  slice_sample(.data = janus_penguins, n = 1000000, replace = TRUE)
 ```
 
 ## Using manual/explicit calculations
@@ -776,7 +809,6 @@ sim_data_50000 <- slice_sample(.data = janus_penguins, n = 50000, replace = TRUE
 ```{r}
 #| echo: true
 #| label: manualling-2 
-#| output-location: "slide"
 
 #####################################
 # 100 points of data
@@ -827,7 +859,7 @@ sim_data_100 |>
     sdbm = sd(body_mass_g)
     )
 
-manual_time_100 <- toc() |> pluck(4)
+manual_time_100 <- toc()
 
 #####################################
 # 1000 points of data
@@ -835,7 +867,7 @@ manual_time_100 <- toc() |> pluck(4)
 tic.clear()
 tic("Manual calculations 1000") 
 
-sim_data_1000 |> 
+sim_data_1k |> 
   filter(species == "Adelie") |> 
   summarize(
     species = unique(species),
@@ -849,7 +881,7 @@ sim_data_1000 |>
     sdbm = sd(body_mass_g)
     )
 
-sim_data_1000 |> 
+sim_data_1k |> 
   filter(species == "Gentoo") |> 
   summarize(
     species = unique(species),
@@ -863,7 +895,7 @@ sim_data_1000 |>
     sdbm = sd(body_mass_g)
     )
 
-sim_data_1000 |> 
+sim_data_1k |> 
   filter(species == "Chinstrap") |> 
   summarize(
     species = unique(species),
@@ -877,7 +909,7 @@ sim_data_1000 |>
     sdbm = sd(body_mass_g)
     )
 
-manual_time_1000 <- toc() |> pluck(4)
+manual_time_1k <- toc()
 
 #####################################
 # 10000 points of data
@@ -885,7 +917,7 @@ manual_time_1000 <- toc() |> pluck(4)
 tic.clear()
 tic("Manual calculations 10000") 
 
-sim_data_10000 |> 
+sim_data_10k |> 
   filter(species == "Adelie") |> 
   summarize(
     species = unique(species),
@@ -899,7 +931,7 @@ sim_data_10000 |>
     sdbm = sd(body_mass_g)
     )
 
-sim_data_10000 |> 
+sim_data_10k |> 
   filter(species == "Gentoo") |> 
   summarize(
     species = unique(species),
@@ -913,7 +945,7 @@ sim_data_10000 |>
     sdbm = sd(body_mass_g)
     )
 
-sim_data_10000 |> 
+sim_data_10k |> 
   filter(species == "Chinstrap") |> 
   summarize(
     species = unique(species),
@@ -927,15 +959,15 @@ sim_data_10000 |>
     sdbm = sd(body_mass_g)
     )
 
-manual_time_10000 <- toc() |> pluck(4)
+manual_time_10k <- toc()
 
 #####################################
 # 50000 points of data
 
 tic.clear()
-tic("Manual calculations 50000") 
+tic("Manual calculations 50k") 
 
-sim_data_50000 |> 
+sim_data_50k |> 
   filter(species == "Adelie") |> 
   summarize(
     species = unique(species),
@@ -949,7 +981,7 @@ sim_data_50000 |>
     sdbm = sd(body_mass_g)
     )
 
-sim_data_50000 |> 
+sim_data_50k |> 
   filter(species == "Gentoo") |> 
   summarize(
     species = unique(species),
@@ -963,7 +995,7 @@ sim_data_50000 |>
     sdbm = sd(body_mass_g)
     )
 
-sim_data_50000 |> 
+sim_data_50k |> 
   filter(species == "Chinstrap") |> 
   summarize(
     species = unique(species),
@@ -977,7 +1009,7 @@ sim_data_50000 |>
     sdbm = sd(body_mass_g)
     )
 
-manual_time_50000 <- toc() |> pluck(4)
+manual_time_50k <- toc()
 
 #####################################
 # 100,000 points of data
@@ -985,53 +1017,155 @@ manual_time_50000 <- toc() |> pluck(4)
 # cci-workbench took 3693.41 sec elapsed. ACTUALLY LONGER 
 
 
-# sim_data_100k <- read_csv("data/100k_penguins.csv")
-# tic.clear()
-# tic("Manual calculations 100k") 
-# 
-# sim_data_100k |> 
-#   filter(species == "Adelie") |> 
-#   summarize(
-#     species = unique(species),
-#     mbl = mean(bill_length_mm),
-#     sdbl = sd(bill_length_mm),
-#     mbd = mean(bill_depth_mm),
-#     sdbd = sd(bill_depth_mm),
-#     mfl = mean(flipper_length_mm),
-#     sdfl = sd(flipper_length_mm),
-#     mbm = mean(body_mass_g),
-#     sdbm = sd(body_mass_g)
-#     )
-# 
-# sim_data_100k |> 
-#   filter(species == "Gentoo") |> 
-#   summarize(
-#     species = unique(species),
-#     mbl = mean(bill_length_mm),
-#     sdbl = sd(bill_length_mm),
-#     mbd = mean(bill_depth_mm),
-#     sdbd = sd(bill_depth_mm),
-#     mfl = mean(flipper_length_mm),
-#     sdfl = sd(flipper_length_mm),
-#     mbm = mean(body_mass_g),
-#     sdbm = sd(body_mass_g)
-#     )
-# 
-# sim_data_100k |> 
-#   filter(species == "Chinstrap") |> 
-#   summarize(
-#     species = unique(species),
-#     mbl = mean(bill_length_mm),
-#     sdbl = sd(bill_length_mm),
-#     mbd = mean(bill_depth_mm),
-#     sdbd = sd(bill_depth_mm),
-#     mfl = mean(flipper_length_mm),
-#     sdfl = sd(flipper_length_mm),
-#     mbm = mean(body_mass_g),
-#     sdbm = sd(body_mass_g)
-#     )
-# 
-# manual_time_100k <- toc() |> pluck(4)
+tic.clear()
+tic("Manual calculations 100k")
+sim_data_100k |>
+  filter(species == "Adelie") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+sim_data_100k |>
+  filter(species == "Gentoo") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+sim_data_100k |>
+  filter(species == "Chinstrap") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+manual_time_100k <- toc()
+
+#####################################
+# 500,000 points of data
+# it took 3667.102 sec to simulate this on my laptop
+# cci-workbench took 3693.41 sec elapsed. ACTUALLY LONGER 
+
+
+tic.clear()
+tic("Manual calculations 500k")
+sim_data_500k |>
+  filter(species == "Adelie") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+sim_data_500k |>
+  filter(species == "Gentoo") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+sim_data_500k |>
+  filter(species == "Chinstrap") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+manual_time_500k <- toc()
+
+#####################################
+# 1,00,000 points of data
+# it took 3667.102 sec to simulate this on my laptop
+# cci-workbench took 3693.41 sec elapsed. ACTUALLY LONGER 
+
+
+tic.clear()
+tic("Manual calculations 1M")
+sim_data_1M |>
+  filter(species == "Adelie") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+sim_data_1M |>
+  filter(species == "Gentoo") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+sim_data_1M |>
+  filter(species == "Chinstrap") |>
+  summarize(
+    species = unique(species),
+    mbl = mean(bill_length_mm),
+    sdbl = sd(bill_length_mm),
+    mbd = mean(bill_depth_mm),
+    sdbd = sd(bill_depth_mm),
+    mfl = mean(flipper_length_mm),
+    sdfl = sd(flipper_length_mm),
+    mbm = mean(body_mass_g),
+    sdbm = sd(body_mass_g)
+    )
+
+manual_time_1M <- toc()
 
 
 ```
@@ -1040,18 +1174,40 @@ manual_time_50000 <- toc() |> pluck(4)
 #| include: true
 #| label: calculations-times-manual-2
 
-tibble(method = c("100 data points",
-                  "1000 data points",
-                  "10000 data points",
-                  "50000 data points"), 
-       duration = c(manual_time_100,
-                    manual_time_1000, 
-                    manual_time_10000,
-                    manual_time_50000)) |> 
+calculations_times_manual <- tibble(method = factor(c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points"),
+                  levels = c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points")), 
+       duration = c(manual_time_100[[2]] - manual_time_100[[1]],
+                    manual_time_1k[[2]] - manual_time_1k[[1]], 
+                    manual_time_10k[[2]] - manual_time_10k[[1]],
+                    manual_time_50k[[2]] - manual_time_50k[[1]],
+                    manual_time_100k[[2]] - manual_time_100k[[1]],
+                    manual_time_500k[[2]] - manual_time_500k[[1]],
+                    manual_time_1M[[2]] - manual_time_1M[[1]]))
+
+calculations_times_manual |> 
   gt() |> 
   tab_header(
     title = "Calculation time as data increases",
     subtitle = "Calculation method: manual")
+
+calculations_times_manual  |> 
+  ggplot(aes(x = method, y = duration, fill = method))+
+  geom_col() +
+  ylab("duration in seconds") +
+  coord_flip() + 
+  scale_x_discrete(limits = rev(levels(calculations_times_manual$method)))
 
 ```
 
@@ -1061,8 +1217,7 @@ tibble(method = c("100 data points",
 #| echo: true
 #| label: looping-2
 #| include: true
-#| code-line-numbers: "4, 7-15"
-#| output-location: "slide"
+
 
 
 ######################################
@@ -1088,7 +1243,7 @@ for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
 
 }
   
-forloop_time_10 <- toc() |> pluck(4)
+forloop_time_10 <- toc()
 
 ######################################
 # 100 data points
@@ -1113,16 +1268,16 @@ for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
 
 }
   
-forloop_time_100 <- toc() |> pluck(4)
+forloop_time_100 <- toc()
 
 ######################################
 # 1000 data points
 
 tic.clear()
-tic("For-loop-1000") 
+tic("For-loop-1k") 
 
 for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
-  sim_data_1000 |> 
+  sim_data_1k |> 
   filter(species == penguin) |> 
   summarize(species = unique(species),
             mbl = mean(bill_length_mm),
@@ -1138,16 +1293,16 @@ for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
 
 }
   
-forloop_time_1000 <- toc() |> pluck(4)
+forloop_time_1k <- toc()
 
 ######################################
 # 10000 data points
 
 tic.clear()
-tic("For-loop-10000") 
+tic("For-loop-10k") 
 
 for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
-  sim_data_10000 |> 
+  sim_data_10k |> 
   filter(species == penguin) |> 
   summarize(species = unique(species),
             mbl = mean(bill_length_mm),
@@ -1163,16 +1318,16 @@ for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
 
 }
   
-forloop_time_10000 <- toc() |> pluck(4)
+forloop_time_10k <- toc()
 
 ######################################
 # 50000 data points
 
 tic.clear()
-tic("For-loop-50000") 
+tic("For-loop-50k") 
 
 for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
-  sim_data_50000 |> 
+  sim_data_50k |> 
   filter(species == penguin) |> 
   summarize(species = unique(species),
             mbl = mean(bill_length_mm),
@@ -1188,8 +1343,82 @@ for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
 
 }
   
-forloop_time_50000 <- toc() |> pluck(4)
+forloop_time_50k <- toc()
 
+######################################
+# 100000 data points
+
+tic.clear()
+tic("For-loop-100k") 
+
+for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
+  sim_data_100k |> 
+  filter(species == penguin) |> 
+  summarize(species = unique(species),
+            mbl = mean(bill_length_mm),
+            sdbl = sd(bill_length_mm),
+            mbd = mean(bill_depth_mm),
+            sdbd = sd(bill_depth_mm),
+            mfl = mean(flipper_length_mm),
+            sdfl = sd(flipper_length_mm),
+            mbm = mean(body_mass_g),
+            sdbm = sd(body_mass_g)
+            ) |> 
+    print()
+
+}
+  
+forloop_time_100k <- toc()
+
+######################################
+# 500000 data points
+
+tic.clear()
+tic("For-loop-500k") 
+
+for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
+  sim_data_500k |> 
+  filter(species == penguin) |> 
+  summarize(species = unique(species),
+            mbl = mean(bill_length_mm),
+            sdbl = sd(bill_length_mm),
+            mbd = mean(bill_depth_mm),
+            sdbd = sd(bill_depth_mm),
+            mfl = mean(flipper_length_mm),
+            sdfl = sd(flipper_length_mm),
+            mbm = mean(body_mass_g),
+            sdbm = sd(body_mass_g)
+            ) |> 
+    print()
+
+}
+  
+forloop_time_500k <- toc()
+
+######################################
+# 1000000 data points
+
+tic.clear()
+tic("For-loop-1M") 
+
+for (penguin in c("Adelie", "Gentoo", "Chinstrap")) {
+  sim_data_1M |> 
+  filter(species == penguin) |> 
+  summarize(species = unique(species),
+            mbl = mean(bill_length_mm),
+            sdbl = sd(bill_length_mm),
+            mbd = mean(bill_depth_mm),
+            sdbd = sd(bill_depth_mm),
+            mfl = mean(flipper_length_mm),
+            sdfl = sd(flipper_length_mm),
+            mbm = mean(body_mass_g),
+            sdbm = sd(body_mass_g)
+            ) |> 
+    print()
+
+}
+  
+forloop_time_1M <- toc()
 
 ```
 
@@ -1198,14 +1427,42 @@ forloop_time_50000 <- toc() |> pluck(4)
 #| include: true
 #| label: calculations-times-for-loop-2
 
-tibble(duration = c(forloop_time_100,
-                    forloop_time_1000, 
-                    forloop_time_10000,
-                    forloop_time_50000)) |> 
+
+
+calculations_times_forloop <- tibble(method = factor(c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points"),
+                  levels = c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points")), 
+       duration = c(forloop_time_100[[2]] - forloop_time_100[[1]],
+                    forloop_time_1k[[2]] - forloop_time_1k[[1]], 
+                    forloop_time_10k[[2]] - forloop_time_10k[[1]],
+                    forloop_time_50k[[2]] - forloop_time_50k[[1]],
+                    forloop_time_100k[[2]] - forloop_time_100k[[1]],
+                    forloop_time_500k[[2]] - forloop_time_500k[[1]],
+                    forloop_time_1M[[2]] - forloop_time_1M[[1]]))
+
+calculations_times_forloop |> 
   gt() |> 
   tab_header(
     title = "Calculation time as data increases",
     subtitle = "Calculation method: for-loop")
+
+calculations_times_forloop  |> 
+  ggplot(aes(x = method, y = duration, fill = method))+
+  geom_col() +
+  ylab("duration in seconds") +
+  coord_flip() + 
+  scale_x_discrete(limits = rev(levels(calculations_times_forloop$method)))
 
 ```
 
@@ -1214,7 +1471,7 @@ tibble(duration = c(forloop_time_100,
 ```{r}
 #| echo: true
 #| label: dplying-2
-#| output-location: "slide"
+
 
 
 ########################################
@@ -1235,7 +1492,7 @@ sim_data_10 |>
             sdbm = sd(body_mass_g)
             )
 
-dplyr_time_10 <- toc() |> pluck(4)
+dplyr_time_10 <- toc()
 
 ########################################
 # 100 points of data
@@ -1255,7 +1512,7 @@ sim_data_100 |>
             sdbm = sd(body_mass_g)
             )
 
-dplyr_time_100 <- toc() |> pluck(4)
+dplyr_time_100 <- toc()
 
 ########################################
 # 1000 points of data
@@ -1263,7 +1520,7 @@ dplyr_time_100 <- toc() |> pluck(4)
 tic.clear()
 tic("Dplyr calculations 1000 points of data")
 
-sim_data_1000 |> 
+sim_data_1k |> 
   group_by(species) |> 
   summarize(mbl = mean(bill_length_mm),
             sdbl = sd(bill_length_mm),
@@ -1275,7 +1532,7 @@ sim_data_1000 |>
             sdbm = sd(body_mass_g)
             )
 
-dplyr_time_1000 <- toc() |> pluck(4)
+dplyr_time_1k <- toc()
 
 ########################################
 # 10000 points of data
@@ -1283,7 +1540,7 @@ dplyr_time_1000 <- toc() |> pluck(4)
 tic.clear()
 tic("Dplyr calculations 10000 points of data")
 
-sim_data_10000 |> 
+sim_data_10k |>  
   group_by(species) |> 
   summarize(mbl = mean(bill_length_mm),
             sdbl = sd(bill_length_mm),
@@ -1295,7 +1552,7 @@ sim_data_10000 |>
             sdbm = sd(body_mass_g)
             )
 
-dplyr_time_10000 <- toc() |> pluck(4)
+dplyr_time_10k <- toc()
 
 ########################################
 # 50000 points of data
@@ -1303,7 +1560,7 @@ dplyr_time_10000 <- toc() |> pluck(4)
 tic.clear()
 tic("Dplyr calculations 50000 points of data")
 
-sim_data_50000 |> 
+sim_data_50k |> 
   group_by(species) |> 
   summarize(mbl = mean(bill_length_mm),
             sdbl = sd(bill_length_mm),
@@ -1315,7 +1572,70 @@ sim_data_50000 |>
             sdbm = sd(body_mass_g)
             )
 
-dplyr_time_50000 <- toc() |> pluck(4)
+dplyr_time_50k <- toc()
+
+
+########################################
+# 100000 points of data
+
+tic.clear()
+tic("Dplyr calculations 100000 points of data")
+
+sim_data_100k |>
+  group_by(species) |> 
+  summarize(mbl = mean(bill_length_mm),
+            sdbl = sd(bill_length_mm),
+            mbd = mean(bill_depth_mm),
+            sdbd = sd(bill_depth_mm),
+            mfl = mean(flipper_length_mm),
+            sdfl = sd(flipper_length_mm),
+            mbm = mean(body_mass_g),
+            sdbm = sd(body_mass_g)
+            )
+
+dplyr_time_100k <- toc()
+
+########################################
+# 500000 points of data
+
+tic.clear()
+tic("Dplyr calculations 500000 points of data")
+
+sim_data_500k |>
+  group_by(species) |> 
+  summarize(mbl = mean(bill_length_mm),
+            sdbl = sd(bill_length_mm),
+            mbd = mean(bill_depth_mm),
+            sdbd = sd(bill_depth_mm),
+            mfl = mean(flipper_length_mm),
+            sdfl = sd(flipper_length_mm),
+            mbm = mean(body_mass_g),
+            sdbm = sd(body_mass_g)
+            )
+
+dplyr_time_500k <- toc()
+
+
+########################################
+# 100000 points of data
+
+tic.clear()
+tic("Dplyr calculations 1M points of data")
+
+sim_data_1M |>
+  group_by(species) |> 
+  summarize(mbl = mean(bill_length_mm),
+            sdbl = sd(bill_length_mm),
+            mbd = mean(bill_depth_mm),
+            sdbd = sd(bill_depth_mm),
+            mfl = mean(flipper_length_mm),
+            sdfl = sd(flipper_length_mm),
+            mbm = mean(body_mass_g),
+            sdbm = sd(body_mass_g)
+            )
+
+dplyr_time_1M <- toc()
+
 ```
 
 
@@ -1327,13 +1647,51 @@ Results of dplyr calculations
 #| label: calculations-times-for-dplyr-2
 
 tibble(duration = c(dplyr_time_100,
-                    dplyr_time_1000, 
-                    dplyr_time_10000,
-                    dplyr_time_50000)) |> 
+                    dplyr_time_1k, 
+                    dplyr_time_10k,
+                    dplyr_time_50k,
+                    dplyr_time_100k,
+                    dplyr_time_500k,
+                    dplyr_time_1M)) |> 
   gt() |> 
   tab_header(
     title = "Calculation time as data increases",
     subtitle = "Calculation method: for-loop")
+
+calculations_times_dplyr <- tibble(method = factor(c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points"),
+                  levels = c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points")), 
+       duration = c(dplyr_time_100[[2]] - dplyr_time_100[[1]],
+                    dplyr_time_1k[[2]] - dplyr_time_1k[[1]], 
+                    dplyr_time_10k[[2]] - dplyr_time_10k[[1]],
+                    dplyr_time_50k[[2]] - dplyr_time_50k[[1]],
+                    dplyr_time_100k[[2]] - dplyr_time_100k[[1]],
+                    dplyr_time_500k[[2]] - dplyr_time_500k[[1]],
+                    dplyr_time_1M[[2]] - dplyr_time_1M[[1]]))
+
+calculations_times_dplyr |> 
+  gt() |> 
+  tab_header(
+    title = "Calculation time as data increases",
+    subtitle = "Calculation method: dplyr")
+
+calculations_times_dplyr  |> 
+  ggplot(aes(x = method, y = duration, fill = method))+
+  geom_col() +
+  ylab("duration in seconds") +
+  coord_flip() + 
+  scale_x_discrete(limits = rev(levels(calculations_times_forloop$method)))
 
 ```
 
@@ -1354,7 +1712,7 @@ sim_data_10 |>
   map(summarize_penguin_population) |> 
   list_rbind() 
 
-map_time_10 <- toc() |> pluck(4)
+map_time_10 <- toc()
 
 ############################
 # 100 points of data 
@@ -1367,90 +1725,280 @@ sim_data_100 |>
   map(summarize_penguin_population) |> 
   list_rbind()
 
-map_time_100 <- toc() |> pluck(4)
+map_time_100 <- toc()
 
 ############################
 # 1000 points of data 
 tic.clear()
 tic("map() calculations 1000 points of data ") 
 
-sim_data_1000 |> 
+sim_data_1k |> 
   group_by(species) |>
   group_split() |>
   map(summarize_penguin_population) |> 
   list_rbind()
 
-map_time_1000 <- toc() |> pluck(4)
+map_time_1k <- toc()
 
 ############################
 # 10000 points of data 
 tic.clear()
 tic("map() calculations 10000 points of data ") 
 
-sim_data_10000 |> 
+sim_data_10k |> 
   group_by(species) |>
   group_split() |>
   map(summarize_penguin_population) |> 
   list_rbind()
 
-map_time_10000 <- toc() |> pluck(4)
+map_time_10k <- toc()
 
 ############################
 # 50000 points of data 
 tic.clear()
 tic("map() calculations 50000 points of data ") 
 
-sim_data_50000 |> 
+sim_data_50k |> 
   group_by(species) |>
   group_split() |>
   map(summarize_penguin_population) |> 
   list_rbind()
 
-map_time_50000 <- toc() |> pluck(4)
+map_time_50k <- toc()
+
+############################
+# 100000 points of data 
+tic.clear()
+tic("map() calculations 100000 points of data ") 
+
+sim_data_100k |> 
+  group_by(species) |>
+  group_split() |>
+  map(summarize_penguin_population) |> 
+  list_rbind()
+
+map_time_100k <- toc()
+
+############################
+# 100000 points of data 
+tic.clear()
+tic("map() calculations 100000 points of data ") 
+
+sim_data_100k |> 
+  group_by(species) |>
+  group_split() |>
+  map(summarize_penguin_population) |> 
+  list_rbind()
+
+map_time_100k <- toc()
+
+############################
+# 500000 points of data 
+tic.clear()
+tic("map() calculations 500000 points of data ") 
+
+sim_data_500k |> 
+  group_by(species) |>
+  group_split() |>
+  map(summarize_penguin_population) |> 
+  list_rbind()
+
+map_time_500k <- toc()
+
+############################
+# 1000000 points of data 
+tic.clear()
+tic("map() calculations 1000000 points of data ") 
+
+sim_data_1M |> 
+  group_by(species) |>
+  group_split() |>
+  map(summarize_penguin_population) |> 
+  list_rbind()
+
+map_time_1M <- toc()
+
+```
+
+## Calculations - map method 
+```{r}
+#| include: true
+#| label: calculations-times-for-map-2
+
+
+
+calculations_times_map <- tibble(method = factor(c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points"),
+                  levels = c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points")), 
+       duration = c(map_time_100[[2]] - map_time_100[[1]],
+                    map_time_1k[[2]] - map_time_1k[[1]], 
+                    map_time_10k[[2]] - map_time_10k[[1]],
+                    map_time_50k[[2]] - map_time_50k[[1]],
+                    map_time_100k[[2]] - map_time_100k[[1]],
+                    map_time_500k[[2]] - map_time_500k[[1]],
+                    map_time_1M[[2]] - map_time_1M[[1]]))
+
+calculations_times_map |> 
+  gt() |> 
+  tab_header(
+    title = "Calculation time as data increases",
+    subtitle = "Calculation method: map")
+
+calculations_times_map  |> 
+  ggplot(aes(x = method, y = duration, fill = method))+
+  geom_col() +
+  ylab("duration in seconds") +
+  coord_flip() + 
+  scale_x_discrete(limits = rev(levels(calculations_times_map$method)))
+
 ```
 
 
 ## Model performance
 ```{r}
 
-sim_data_100 <- slice_sample(.data = janus_penguins, n = 100, replace = TRUE)
-sim_data_1000 <- slice_sample(.data = janus_penguins, n = 1000, replace = TRUE)
-sim_data_10000 <- slice_sample(.data = janus_penguins, n = 10000, replace = TRUE)
-sim_data_50000 <- slice_sample(.data = janus_penguins, n = 50000, replace = TRUE)
-
+# sim_data_100 <- slice_sample(.data = janus_penguins, n = 100, replace = TRUE)
+# sim_data_1000 <- slice_sample(.data = janus_penguins, n = 1000, replace = TRUE)
+# sim_data_10000 <- slice_sample(.data = janus_penguins, n = 10000, replace = TRUE)
+# sim_data_50000 <- slice_sample(.data = janus_penguins, n = 50000, replace = TRUE)
+tic.clear()
 tic("100 observations")
-sim_data_100 %>%
-bind_cols(predict(model, new_data = sim_data_100)) %>% 
+model_perf_100 <- sim_data_100 |>
+bind_cols(predict(model, new_data = sim_data_100)) |> 
   count(species, .pred_class) |> 
-  mutate(sample_size = nrow(sim_data_100))
-obs_100 <- toc() |> pluck(4)
+  mutate(sample_size = nrow(sim_data_100),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_100 <- toc()
 
-
+tic.clear()
 tic("1000 observations")
-sim_data_1000 %>%
-bind_cols(predict(model, new_data = sim_data_1000)) %>% 
+model_perf_1k <- sim_data_1k |>
+bind_cols(predict(model, new_data = sim_data_1k)) |> 
   count(species, .pred_class) |> 
-  mutate(sample_size = nrow(sim_data_1000))
-obs_1000 <- toc() |> pluck(4)
+  mutate(sample_size = nrow(sim_data_1k),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_1k <- toc()
 
-tic("10000 observations")
-sim_data_10000 %>%
-bind_cols(predict(model, new_data = sim_data_10000)) %>% 
+tic.clear()
+tic("10k observations")
+model_perf_10k <- sim_data_10k |>
+bind_cols(predict(model, new_data = sim_data_10k)) |> 
   count(species, .pred_class) |> 
-  mutate(sample_size = nrow(sim_data_10000))
-obs_10000 <- toc() |> pluck(4)
+  mutate(sample_size = nrow(sim_data_10k),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_10k <- toc()
 
-tic("50000 observations")
-sim_data_50000 %>%
-bind_cols(predict(model, new_data = sim_data_50000)) %>% 
+tic.clear()
+tic("50k observations")
+model_perf_50k <- sim_data_50k |>
+bind_cols(predict(model, new_data = sim_data_50k)) |> 
   count(species, .pred_class) |> 
-  mutate(sample_size = nrow(sim_data_50000))
-obs_50000 <- toc() |> pluck(4)
+  mutate(sample_size = nrow(sim_data_50k),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_50k <- toc()
 
+
+tic.clear()
+tic("100k observations")
+model_perf_100k <- sim_data_100k |>
+bind_cols(predict(model, new_data = sim_data_100k)) |> 
+  count(species, .pred_class) |> 
+  mutate(sample_size = nrow(sim_data_100k),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_100k <- toc()
+
+tic.clear()
+tic("500k observations")
+model_perf_500k <- sim_data_500k |>
+bind_cols(predict(model, new_data = sim_data_500k)) |> 
+  count(species, .pred_class) |> 
+  mutate(sample_size = nrow(sim_data_500k),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_500k <- toc()
+
+tic.clear()
+tic("1M observations")
+model_perf_1M <- sim_data_1M |>
+bind_cols(predict(model, new_data = sim_data_1M)) |> 
+  count(species, .pred_class) |> 
+  mutate(sample_size = nrow(sim_data_1M),
+         pred_species = .pred_class) |> 
+  select(-.pred_class)
+obs_1M <- toc()
 
 
 ```
 
+```{r}
+#| include: true
+#| label: calculations-model-performance
+
+
+
+model_perf  <- tibble(method = factor(c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points"),
+                  levels = c("100 data points",
+                  "1k data points",
+                  "10k data points",
+                  "50k data points",
+                  "100k data points",
+                  "500k data points",
+                  "1M data points")), 
+       miss_identifications = c(model_perf_100 |> filter(species != pred_species) |> pluck(2) |> sum(),
+                                model_perf_1k |> filter(species != pred_species) |> pluck(2) |> sum(),
+                                model_perf_10k |> filter(species != pred_species) |> pluck(2) |> sum(),
+                                model_perf_50k |> filter(species != pred_species) |> pluck(2) |> sum(),
+                                model_perf_100k |> filter(species != pred_species) |> pluck(2) |> sum(),
+                                model_perf_500k |> filter(species != pred_species) |> pluck(2) |> sum(),
+                                model_perf_1M |> filter(species != pred_species) |> pluck(2) |> sum()
+                                ),
+       perc_miss_id = c(model_perf_100 |> filter(species != pred_species) |> pluck(2) |> sum()/100*100,
+                        model_perf_1k |> filter(species != pred_species) |> pluck(2) |> sum()/1000*100,
+                        model_perf_10k |> filter(species != pred_species) |> pluck(2) |> sum()/10000*100,
+                        model_perf_50k |> filter(species != pred_species) |> pluck(2) |> sum()/50000*100,
+                        model_perf_100k |> filter(species != pred_species) |> pluck(2) |> sum()/100000*100,
+                        model_perf_500k |> filter(species != pred_species) |> pluck(2) |> sum()/500000*100,
+                        model_perf_1M |> filter(species != pred_species) |> pluck(2) |> sum()/1000000*100
+                        ))
+
+model_perf |> 
+  mutate() |> 
+  gt() |> 
+  tab_header(
+    title = "Model Performance")
+
+calculations_times_map  |> 
+  ggplot(aes(x = method, y = duration, fill = method))+
+  geom_col() +
+  ylab("duration in seconds") +
+  coord_flip() + 
+  scale_x_discrete(limits = rev(levels(calculations_times_map$method)))
+
+```
+
+The model does not degrade as the number of observations increases. It roughly misidentifies 5% of specimens.
 
 # 2 - Running on Workbench
 
