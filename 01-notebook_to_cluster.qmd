@@ -92,7 +92,7 @@ This involved storage that you physically connect to your machine. Typically we 
 #| message: false
 
 tic(msg = "local csv")
-data <- read_csv(file = here("data/original-penguins.csv"))
+data <- read_csv(file = here("data/original_palmerpenguins.csv"))
 toc()
 ```
 
@@ -123,9 +123,9 @@ Things to keep an eye out for:
 ```{r}
 #| echo: true
 
-con <- dbConnect(SQLite(), here("data/temp_db"))
+con <- dbConnect(SQLite(), here("data/palmerpenguins_db"))
 tic(msg = "csv from a database")
-data <- dbGetQuery(con, "select * from penguins")
+data <- dbGetQuery(con, "select * from original_penguins")
 toc()
 dbDisconnect(con)
 ```
@@ -710,7 +710,7 @@ Penguins researchers are interested in classifying the wave of penguins migratin
 
 
 
-filtered_penguins <- read_csv(here("data/original-penguins.csv")) |>
+filtered_penguins <- read_csv(here("data/original_palmerpenguins.csv")) |>
   drop_na(ends_with("mm")) |> 
   select(species, ends_with("mm"), body_mass_g) |> 
   mutate(species = as_factor(species))
