@@ -71,11 +71,11 @@ This project describes the *Penguin Research Project* (PRP).  PRP's goal is to e
 
 The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project  might be use useful to researchers from various fields. 
 
-The workflow outlined by PRP involved digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
+The workflow outlined by PRP involves digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
 
 There are compelling reasons to run one's analysis on a personal computer. Modern laptops are portable and powerful devices capable of crunching lots of data.
 
-However, as we will see, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute. 
+However, as we will see, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute capabilities. 
 
 ### Ingest the data
 
@@ -100,7 +100,7 @@ toc()
 
 Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.package()` for instance. 
 
-Data distributed in this manner is easy to share with collaborators. Typically, we are talking about small datasets though.
+Data distributed in this manner is easy to share with collaborators and it is very quick to access. Typically, we are talking about small datasets though.
 
 ```{r}
 #|echo: true
@@ -183,9 +183,9 @@ toc()
 
 ## Analysis running on a laptop
 
-The workflow I'll follow is fairly straight forward. The diagram below details the individual steps I'll follow.
+The diagram below details the individual steps of this workflow.
 
-As mentioned earlier, we believe that these steps are common among most workflows so that regardless of your field, you would probably need to follow these steps in some shape or form.   
+As mentioned earlier, these steps are common among most workflows so that regardless of your field, you would probably need to follow some of these steps in some shape or form.   
 
 ```{mermaid}
 %%| fig-width: 8
@@ -315,6 +315,13 @@ data <- data |>
     mutate(size = factor(size, levels = c("tiny", "small", "medium", "large")))
 ```
 
+#### c - reshaping data 
+
+Reshaping data is a very common step you may need complete in order to manipulate your data into form that can be incorporated into your analysis. The _shape_ of the data refers to whether the data is in a _long_ format or _wide_ format. Wide format is often used when analyzing data, performing calculations, or manual data entry. It’s intuitive for reading and interpreting data. 
+
+By comparison, long format is used  when visualizing multiple variables in plots using statistical software. Long format is essential for creating specific types of visualizations. 
+
+You can read more about this topic [here] (https://towardsdatascience.com/long-and-wide-formats-in-data-explained-e48d7c9a06cb).
 
 
 ### Communicating findings
@@ -588,7 +595,7 @@ dplyr_time <- toc()
 
 #### Method 4: abstracting with the purrr package
 
-We can take a DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subset via a lambda function. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take. 
+We can take a DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subset. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take. 
 
 
 ```{r}
@@ -618,7 +625,7 @@ summarize_penguin_population <- function(df) {
 
 
 ::: callout-important
--   There is an additional step involved: turning the groups into `list` objects using the `split()` function.
+-   There is an additional step involved: turning the groups into `list` objects using the `group_split()` function.
 -   The function `map()` is the magic sauce, it requires as arguments the individual lists and a function to be applied to each element of the list.
 :::
 
@@ -643,6 +650,12 @@ data |>
 #     split(data$species) |> 
 #     map(summarize_penguin_population) |> 
 #     bind_rows()
+
+# an even shorter code relying on the dataframe specific map_df() functon 
+# data |>
+#     group_split(data$species) |>
+#     map_df(summarize_penguin_population)
+
 
 map_time <- toc()
 
