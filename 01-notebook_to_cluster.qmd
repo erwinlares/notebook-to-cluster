@@ -46,14 +46,20 @@ My goal, for the first half, is to create a walk-through that documents the step
 
 
 
-Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which are intended to make work easier. 
+Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which might make your work easier. 
 
 
-## Roadmap
+# The notebook half  
+
+## 1 - A workflow running on a laptop
+
+This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts. 
+
+@fig-roadmap outlines ...
 
 ```{mermaid}
 %%| fig-width: 8
-%%| label: roadmap
+%%| label: fig-roadmap
 
 flowchart LR
   A[Original<br/>Research] --> B(PRP)
@@ -63,29 +69,23 @@ flowchart LR
 
 ```
 
-# The notebook half  
-
-## 1 - A workflow running on a laptop
-
-This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts. 
-
-The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project  might be use useful to researchers from various fields. 
+The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project can be adopted to researchers from multiple fields. 
 
 The workflow outlined by PRP involves digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
 
-There are compelling reasons to run one's analysis on a personal computer. Modern laptops are portable and powerful devices capable of crunching lots of data.
+There are compelling reasons to run one's analysis on a personal computer. They are accessible, portable and modern laptops are powerful devices capable of crunching lots of data.
 
 However, as we will see, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute capabilities. 
 
 ### Ingest the data
 
-The first step is to get the data into whatever tool we intent to use for our analysis. For the first iteration of this tutorial, it is the R programming language. Future iteration of this document will include a Python version.
+The first step is to get the data into whatever tool we intent to use for our analysis. For the first iteration of this tutorial, it is the R programming language. Future iterations of this document will include a Python version.
 
 There are numerous ways in which data can be digested. This guide shows a few options. After each method of reading data is completed, the elapsed time is provided to give an idea how long it takes to complete the task.
 
 #### Data stored as a local flat file
 
-This involved storage that you physically connect to your machine. Typically we are talking about hard drives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
+This involves storage that is physically connected to your machine. Typically we are talking about hard drives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
 
 ```{r}
 #| echo: true
@@ -104,6 +104,7 @@ Data distributed in this manner is easy to share with collaborators and it is ve
 
 ```{r}
 #|echo: true
+#|message: false
 
 tic(msg = "csv from a package")
 data <- palmerpenguins::penguins
@@ -177,18 +178,18 @@ toc()
 -   manual entry (avoid this like the plague)   
 -   instruments (using a service account)   
 -   data repositories   
--   S3 buckets    
--   GoogleDrive or similar service    
+-   S3 buckets
 
 
 ## Analysis running on a laptop
 
-The diagram below details the individual steps of this workflow.
+@fig-mermaid-workflow details the individual steps of this workflow.
 
 As mentioned earlier, these steps are common among most workflows so that regardless of your field, you would probably need to follow some of these steps in some shape or form.   
 
 ```{mermaid}
 %%| fig-width: 8
+%%| label: fig-mermaid-workflow
 
 flowchart LR
   A(ingest<br/>data) --> B(clean & prep<br/>data)
@@ -220,7 +221,7 @@ data <- read_csv("https://go.wisc.edu/9pv6q1")
 
 Once the data is ingested, it often requires cleaning, reshaping, or creating new variables to complete a particular analysis. 
 
-In this case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to _snake/_case_, make them more descriptive and we'll get rid of some unnecessary variables. 
+In this case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to *snake_case*, make them more descriptive and we'll get rid of some unnecessary variables. 
 
 #### a - cleaning names
 
@@ -261,7 +262,7 @@ data <- data |>
 
 #### b - creating new variables 
 
-As part of the analysis, we may need to create new variables. In our case, we want to classify each specimen as small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is _tiny_. Above the 1st quartile and at or below the 2nd quartile, _small_. Above the 2nd quartile and at or below the 3rd quartile, _medium_ Finally, any specimen above the 3th will be classified as _large_. 
+As part of an analysis, we may need to create new variables. In our case, we want to classify each specimen as small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is _tiny_. Above the 1st quartile and at or below the 2nd quartile, _small_. Above the 2nd quartile and at or below the 3rd quartile, _medium_ Finally, any specimen above the 3th will be classified as _large_. 
 
 - tiny: 0% < penguin <= 25%
 - small: 25% < penguin <= 50%
