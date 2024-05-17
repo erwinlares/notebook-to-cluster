@@ -45,7 +45,7 @@ Average weight is `r mean(data$body_mass_g, na.rm = TRUE) |> round(2)` g.
 data |>
     na.omit() |> 
     ggplot(aes(x = body_mass_g)) + 
-    geom_bar() + 
+    geom_bar() +
     labs(title = str_c("Body mass distribution for ", params$species, " penguins")) +
     xlab("Body weight in g") +
     ylab("Count")
