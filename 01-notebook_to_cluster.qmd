@@ -262,7 +262,7 @@ data <- data |>
 
 #### b - creating new variables 
 
-As part of an analysis, we may need to create new variables. In our case, we want to classify each specimen as small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is _tiny_. Above the 1st quartile and at or below the 2nd quartile, _small_. Above the 2nd quartile and at or below the 3rd quartile, _medium_ Finally, any specimen above the 3th will be classified as _large_. 
+As part of an analysis, we may need to create new variables. In our case, we want to classify each specimen as tiny, small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is _tiny_. Above the 1st quartile and at or below the 2nd quartile, _small_. Above the 2nd quartile and at or below the 3rd quartile, _medium_ Finally, any specimen above the 3th will be classified as _large_. 
 
 - tiny: 0% < penguin <= 25%
 - small: 25% < penguin <= 50%
@@ -318,11 +318,11 @@ data <- data |>
 
 #### c - reshaping data 
 
-Reshaping data is a very common step you may need complete in order to manipulate your data into form that can be incorporated into your analysis. The _shape_ of the data refers to whether the data is in a _long_ format or _wide_ format. Wide format is often used when analyzing data, performing calculations, or manual data entry. It’s intuitive for reading and interpreting data. 
+Reshaping data is a very common step you may need complete in order to massage your data into a form that that is better suited for your analysis. The _shape_ of the data refers to whether the data is in a _long_ format or _wide_ format. Wide format is often used when analyzing data, performing calculations, or manual data entry. It’s intuitive for reading and interpreting data. 
 
 By comparison, long format is used  when visualizing multiple variables in plots using statistical software. Long format is essential for creating specific types of visualizations. 
 
-You can read more about this topic [here] (https://towardsdatascience.com/long-and-wide-formats-in-data-explained-e48d7c9a06cb).
+You can read more about this topic [here](https://towardsdatascience.com/long-and-wide-formats-in-data-explained-e48d7c9a06cb).
 
 
 ### Communicating findings
@@ -361,11 +361,12 @@ data |>
 
 >> A picture is worth a thousand words
 
-These boxplots show the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island. 
+@fig-bloxplots shows the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Gentoo penguins are clearly the largest species of penguins in the study, whereas Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island. 
 
 
 ```{r}
 #| echo: true
+#| label: fig-boxplots
 
 data |> 
   ggplot(aes(x = species, y = body_mass_g, color = species)) +
@@ -379,9 +380,9 @@ data |>
 
 #### Reporting and communicating findings 
 
-It is often the case that after a research cycle has been completed, a comprehensive report needs to be created to document the methods, analyses and findings. Sometime research workflows may require to produce reports periodically, i.e. the data changes, focused reports for specific audiences, changes in methods, etc. 
+It is often the case that after a research cycle has been completed, a comprehensive report needs to be created to document the methods, analyses and findings. Sometimes research workflows may require to produce reports periodically, i.e. the data changes, focused reports for specific audiences, changes in methods, etc. 
 
-A solution that allows for prose and code on the same document is an excellent option for creating documents that build their content on components that are subject to change.
+A solution that allows for prose and code on the same document is an excellent option for creating documents that build their content on components that are subject to change. This very document you are reading is an example of this approach. 
 
 As a prototype, let's consider creating a document that reports the some of the content outlined earlier for a specific type of penguin. The document includes a brief paragraph, a table, and a visualization. The document also includes a parameter that specifies the type of penguin we want to create a report for. 
 
