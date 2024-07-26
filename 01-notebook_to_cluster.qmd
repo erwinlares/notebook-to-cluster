@@ -225,7 +225,7 @@ In this case, we would adhere to the [Style Guide from Advanced R](http://adv-r.
 
 #### a - cleaning names
 
-The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally all missing values are dropped with `na_omit()` and only the new variables are kept. 
+The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally all missing values are dropped with `na_omit()`, and only the new variables are kept. 
 
 For an alternative way to accomplish this, consider using the `clean_names()` function from the `janitor` package which implements the _Style Guide_ mentioned above.  
 
