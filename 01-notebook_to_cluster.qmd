@@ -98,7 +98,7 @@ toc()
 
 #### Data distributed as part of a package. 
 
-Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.package()` for instance. 
+Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.packages()` for instance. 
 
 Data distributed in this manner is easy to share with collaborators and it is very quick to access. Typically, we are talking about small datasets though.
 
@@ -141,9 +141,9 @@ When reading csv files, be mindful that size does matter. For smaller size files
 
 #### Data using a *Globus* endpoint
 
-The data may exist on a different server physically located next to you or on the other side of the planet. We recommend  `Globus` to facilitate data sharing. `Globus` allows users to create _endpoints_ to that allows collaborators access to that data. 
+The data may exist on a different server physically located next to you or on the other side of the planet. We recommend  `Globus` to facilitate data sharing. `Globus` allows users to create _endpoints_ that allows collaborators access to that data. 
 
-In the example below, the data is access through an endpoint set up by PRP's scientist on a remote location. 
+In the example below, the data is accessed through an endpoint set up by PRP's scientist on a remote location. 
 
 ```{r}
 #| echo: true
