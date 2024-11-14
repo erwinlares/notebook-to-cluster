@@ -744,7 +744,7 @@ tic("Fitting model")
 model <- rand_forest() |> 
   set_engine("ranger") |> 
   set_mode("classification") |> 
-  fit(species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g, data = filtered_penguins)
+  fit(species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g, data = data)
 
 fit_time <- toc()
 
