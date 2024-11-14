@@ -43,18 +43,13 @@ What happens when your data grows too large for your laptop? That was the questi
 
 My goal, for the first half of this document, is to create a walk-through that documents the steps I took to load the data, analyze it, and produce research artifacts. In the second half, I document the changes to the workflow so that the analysis can be shipped to an external cluster.
 
-<<<<<<< HEAD
 Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which might make your work easier.
 
 # The notebook half
-=======
+
 I aimed to make the steps outlined here general enough so that most researchers would find an overlap with the steps they are required to take in their own field-specific research.
 
-Along the way, I will show the rationale behind my design choices. I'll also showcase some common best practices as well as tools available to you which might make your work easier. 
-
-
-# The notebook half  
->>>>>>> a69d8faa639390ab1f2a55c7e522a38818b269ba
+Along the way, I will show the rationale behind my design choices. I'll also showcase some common best practices as well as tools available to you which might make your work easier.
 
 ## 1 - A workflow running on a laptop
 
