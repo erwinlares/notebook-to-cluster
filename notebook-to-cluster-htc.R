@@ -1,6 +1,4 @@
-## ---------------------------
-#| label: setup
-
+# libraries 
 
 library(knitr)
 library(tidyverse)
@@ -16,9 +14,11 @@ library(quarto)
 library(here)
 
 #ingesting from online source
+tic(msg = "data from googledrive")
 
 data <- read_csv("https://go.wisc.edu/9pv6q1")
 
+toc()
 
 #manually clearning the data 
 data <- data |>
@@ -49,99 +49,9 @@ data <- data |>
   na.omit()
 
 
-
-
-#p-quartiles() takes a df and bins the observations into the quartiles 
-p_quartiles <- function(df) {
-    df |> 
-    select(body_mass_g) |> 
-    as_vector() |> 
-    quantile(probs = c(.25, .5, .75, 1),na.rm = TRUE)
-}
-
-
-quartile_data <- data |>
-    split(data$species) |> 
-#  group_split(species) |> #loses the grouping values 
-    map(p_quartiles) |>
-    bind_rows(.id = "id") |> 
-    rename(species = id)
-
-
-
-
-
 ## ---------------------------
-#| echo: true
-quartile_data |> 
-    gt() |>
-    tab_header("Cutout values for weight per species")
-    
-
-
-## ---------------------------
-#| echo: true
-data <- data |> 
-    group_by(species) |> 
-    mutate(size = case_when(
-        body_mass_g <= quartile_data[[cur_group_id(),2]] ~ "tiny",
-        body_mass_g <= quartile_data[[cur_group_id(),3]] ~ "small",
-        body_mass_g <= quartile_data[[cur_group_id(),4]] ~ "medium",
-        body_mass_g > quartile_data[[cur_group_id(),4]] ~ "large")) |>
-    ungroup() |> 
-    mutate(size = factor(size, levels = c("tiny", "small", "medium", "large")))
-
-
-## ----penguins-per-size-and-species----
-#| echo: true
-
-data |> 
-    select(species, size) |>
-    group_by(species) |> 
-    reframe(count = fct_count(size |> as_vector())) |> 
-    unnest(cols = c(count)) |> 
-    rename(size = f,
-           count = n) |> 
-    group_by(species) |> 
-    mutate(n = sum(count),
-           percentage = round(count/n*100, 2)) |> 
-    gt() |>
-    tab_header("Sizes per species")
-
-
-
-## ---------------------------
-#| echo: true
-
-data |> 
-  ggplot(aes(x = species, y = body_mass_g, color = species)) +
-  geom_jitter(alpha = 0.25) +
-  geom_boxplot(alpha = 0.25) +
-  theme_minimal() + 
-  facet_grid( ~ island) +
-  xlab("body mass in g")
-
-
-
-## ----render-parametrized-report----
-#| eval: false
-
-## 
-## quarto_render( here("reports/penguin-summary.qmd"),
-##                output_format = "pdf",
-##                execute_params = list(species = "Chinstrap"))
-## 
-## #check this post
-## #https://stackoverflow.com/questions/73571919/how-to-pass-logical-parameters-with-the-quarto-r-package-to-the-knitr-chunk-opti
-## 
-## 
-## 
-
-
-## ---------------------------
-#| echo: true
-#| label: manual-ling
-
+# These are the measures of tendency we 
+# are interenting in calculating
 
 # mbl: mean bill length in mm 
 # sdbl: standard deviation of bill length
@@ -155,7 +65,7 @@ data |>
 tic.clear()
 tic("Manual calculations") 
 
-data |> 
+mct_adelie <- data |> 
   filter(species == "Adelie") |> 
   summarize(
     species = unique(species),
@@ -169,7 +79,7 @@ data |>
     sdbm = sd(body_mass_g)
     )
 
-data |> 
+mct_gentoo <- data |> 
   filter(species == "Gentoo") |> 
   summarize(
     species = unique(species),
@@ -183,7 +93,7 @@ data |>
     sdbm = sd(body_mass_g)
     )
 
-data |> 
+mct_chinstrap <- data |> 
   filter(species == "Chinstrap") |> 
   summarize(
     species = unique(species),
@@ -196,6 +106,8 @@ data |>
     mbm = mean(body_mass_g),
     sdbm = sd(body_mass_g)
     )
+
+mct_tibble <- bind_rows(mct_adelie, mct_chinstrap, mct_gentoo)
 
 manual_time <- toc()
 
@@ -371,6 +283,7 @@ fit_time <- toc()
 ## ---------------------------
 # sim_data <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1HEQa23hR202egPcnyAtQHGyPRw1WWv61H6aHnAhjcrc/edit#gid=519943868")
 
+tic(msg = "Downloading 1M rows from a Globus endpoint")
 janus_penguins <- read_csv("https://g-394ce9.dtn.globus.wisc.edu/public_data/1M_penguins.csv")
 
 
