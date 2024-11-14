@@ -12,7 +12,6 @@ execute:
   echo: false
   message: false
   warning: false
-  
 ---
 
 ```{r}
@@ -40,20 +39,17 @@ library(here)
 
 ## What this is about {#sec-page}
 
-What happens when your data grows too large for your laptop? That was the question that gave rise to this project we call _"From the Notebook to the Cluster"_.
+What happens when your data grows too large for your laptop? That was the question that gave rise to this project we call *"From the Notebook to the Cluster"*.
 
-My goal, for the first half, is to create a walk-through that documents the steps I took to load the data, analyze it, and produce research artifacts. In the second half, I document the changes to the workflow so that the analysis can be shipped to an external cluster. 
+My goal, for the first half of this document, is to create a walk-through that documents the steps I took to load the data, analyze it, and produce research artifacts. In the second half, I document the changes to the workflow so that the analysis can be shipped to an external cluster.
 
+Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which might make your work easier.
 
-
-Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which might make your work easier. 
-
-
-# The notebook half  
+# The notebook half
 
 ## 1 - A workflow running on a laptop
 
-This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts. 
+This project describes the *Penguin Research Project* (PRP). PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts.
 
 @fig-roadmap outlines ...
 
@@ -69,23 +65,23 @@ flowchart LR
 
 ```
 
-The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project can be adopted to researchers from multiple fields. 
+The general idea behind PRP is to provide you with a templated workflow that is general enough so many of the individual steps required to complete the project can be adopted by researchers from other fields.
 
-The workflow outlined by PRP involves digesting and cleaning data, computing summarizing statistics,  creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
+The workflow outlined by PRP involves ingesting and cleaning data, computing summarizing statistics, creating visualizations, communicating results, fitting a classification model, and running predictions on new data.
 
-There are compelling reasons to run one's analysis on a personal computer. They are accessible, portable and modern laptops are powerful devices capable of crunching lots of data.
+There are compelling reasons to run one's analysis on a personal computer. They are accessible, portable, and modern laptops are powerful devices capable of crunching lots of data.
 
-However, as we will see, when the data start to increase in orders of magnitude or the computing needs of one's analyses start to require hours needed to run, it might be advisable to look for resources with larger compute capabilities. 
+However, as we will see, when the data start to increase in orders of magnitude or when the computing needs of one's analyses start to require hours of run time, it might be advisable to look for resources with larger compute capabilities.
 
 ### Ingest the data
 
-The first step is to get the data into whatever tool we intent to use for our analysis. For the first iteration of this tutorial, it is the R programming language. Future iterations of this document will include a Python version.
+The first step is to get the data into whatever tool we intend to use for our analysis. In this first iteration of the tutorial, we will use the R programming language. Future iterations of this document will include a Python version.
 
-There are numerous ways in which data can be digested. This guide shows a few options. After each method of reading data is completed, the elapsed time is provided to give an idea how long it takes to complete the task.
+There are numerous ways in which data can be ingested. This guide shows a few options. After each method of reading data is completed, the elapsed time is provided to give an idea how long it takes to complete the task.
 
 #### Data stored as a local flat file
 
-This involves storage that is physically connected to your machine. Typically we are talking about hard drives permanently connected to your device and removable storage such as external hard drives and USB-drives. 
+This involves storage that is physically connected to your machine. Typically we are talking about hard drives permanently connected to your device or removable storage such as external hard drives and USB-drives.
 
 ```{r}
 #| echo: true
@@ -96,11 +92,11 @@ data <- read_csv(file = here("data/original_palmerpenguins.csv"))
 toc()
 ```
 
-#### Data distributed as part of a package. 
+#### Data distributed as part of a package.
 
-Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.packages()` for instance. 
+Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local; at one time, you had to download it to your computer via `install.packages()` for instance.
 
-Data distributed in this manner is easy to share with collaborators and it is very quick to access. Typically, we are talking about small datasets though.
+Data distributed in this manner is easy to share with collaborators and it is very quick to access. Typically, this only includes small datasets though.
 
 ```{r}
 #|echo: true
@@ -111,15 +107,14 @@ data <- palmerpenguins::penguins
 toc()
 ```
 
-#### Data read from a database 
+#### Data read from a database
 
-As data grows or multiples users require access to the same data, it is common to host the data in a database, rather than a set of flat files. This method involves a few extra steps, but the potential gains are enormous.
+As data grows or multiplies users still require access to the same data, and it is common to host the data in a database, rather than a set of flat files. This method involves a few extra steps, but the potential gains are enormous.
 
-Things to keep an eye out for:  
-- a database connection needs to be established.  
-- each type of database required its own driver.  
-- it is advisable to close the connection to the database after you are done. 
-
+Things to keep an eye out for:\
+- a database connection needs to be established.\
+- each type of database requires its own driver.\
+- it is advisable to close the connection to the database once you are done.
 
 ```{r}
 #| echo: true
@@ -132,18 +127,14 @@ dbDisconnect(con)
 ```
 
 ::: {.callout-tip collapse="true" title="Choosing the right `read*csv()`"}
-
-When reading csv files, be mindful that size does matter. For smaller size files, go with `read.csv()`. Below around 1 MB `read.csv()` is actually faster than `read_csv()` 
-
+When reading csv files, be mindful that size does matter. For smaller size files, go with `read.csv()`. Below around 1 MB `read.csv()` is actually faster than `read_csv()`
 :::
-
-
 
 #### Data using a *Globus* endpoint
 
-The data may exist on a different server physically located next to you or on the other side of the planet. We recommend  `Globus` to facilitate data sharing. `Globus` allows users to create _endpoints_ that allows collaborators access to that data. 
+The data may exist on a different server physically located next to you or on the other side of the planet. We recommend `Globus` to facilitate data sharing. `Globus` allows users to create *endpoints* that allows collaborators access to that data.
 
-In the example below, the data is accessed through an endpoint set up by PRP's scientist on a remote location. 
+In the example below, the data is accessed through an endpoint set up by PRP's scientist on a remote location.
 
 ```{r}
 #| echo: true
@@ -159,9 +150,9 @@ toc()
 Learn more about storage and sharing data with [ResearchDrive and Globus at UW-Madison](https://researchci.it.wisc.edu/).
 :::
 
-#### Data from an online source 
+#### Data from an online source
 
-Here the online source is the flat file stored on a Google Drive folder made accessible through through a public link. Depending on the type of data you are working with, some options may or may not be available to you. 
+Here the online source is a flat file stored on a Google Drive folder made accessible through through a public link. Depending on the type of data you are working with, some options may or may not be available to you.
 
 ```{r}
 #| echo: true
@@ -175,17 +166,16 @@ toc()
 
 #### Other posibilities not explored (yet)
 
--   manual entry (avoid this like the plague)   
--   instruments (using a service account)   
--   data repositories   
+-   manual entry (avoid this like the plague)\
+-   instruments (using a service account)\
+-   data repositories\
 -   S3 buckets
-
 
 ## Analysis running on a laptop
 
 @fig-mermaid-workflow details the individual steps of this workflow.
 
-As mentioned earlier, these steps are common among most workflows so that regardless of your field, you would probably need to follow some of these steps in some shape or form.   
+As mentioned earlier, these steps are common among most workflows. Regardless of your field, you would probably need to follow some of these steps in some shape or form.
 
 ```{mermaid}
 %%| fig-width: 8
@@ -206,7 +196,6 @@ flowchart LR
 
 From all the options listed in the previous section, we'll model grabbing the data from an online source, which is repeated below.
 
-
 ```{r}
 #| echo: true
 
@@ -217,17 +206,17 @@ data <- read_csv("https://go.wisc.edu/9pv6q1")
 
 ```
 
-### Cleaning and Data prep 
+### Cleaning and Data prep
 
-Once the data is ingested, it often requires cleaning, reshaping, or creating new variables to complete a particular analysis. 
+Once the data is ingested, it often requires cleaning, reshaping, or creating new variables to complete a particular analysis.
 
-In this case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to *snake_case*, make them more descriptive and we'll get rid of some unnecessary variables. 
+In this case, we would adhere to the [Style Guide from Advanced R](http://adv-r.had.co.nz/Style.html). We'll change variable names to *snake_case*, make them more descriptive and we'll get rid of some unnecessary variables.
 
 #### a - cleaning names
 
-The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally all missing values are dropped with `na_omit()`, and only the new variables are kept. 
+The code cleans the variable names manually by choosing what variables to keep with `select()`, then renaming them with `mutate()`, finally all missing values are dropped with `na_omit()`, and only the new variables are kept.
 
-For an alternative way to accomplish this, consider using the `clean_names()` function from the `janitor` package which implements the _Style Guide_ mentioned above.  
+For an alternative way to accomplish this, consider using the `clean_names()` function from the `janitor` package which implements the *Style Guide* mentioned above.
 
 ```{r}
 #| echo: true
@@ -260,14 +249,14 @@ data <- data |>
 
 ```
 
-#### b - creating new variables 
+#### b - creating new variables
 
-As part of an analysis, we may need to create new variables. In our case, we want to classify each specimen as tiny, small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is _tiny_. Above the 1st quartile and at or below the 2nd quartile, _small_. Above the 2nd quartile and at or below the 3rd quartile, _medium_ Finally, any specimen above the 3th will be classified as _large_. 
+As part of an analysis, we may need to create new variables. In our case, we want to classify each specimen as tiny, small, medium, or large depending on their body mass. We will follow this criterion: if a penguin is below the 1st quartile, that penguin is *tiny*. Above the 1st quartile and at or below the 2nd quartile, *small*. Above the 2nd quartile and at or below the 3rd quartile, *medium* Finally, any specimen above the 3th will be classified as *large*.
 
-- tiny: 0% < penguin <= 25%
-- small: 25% < penguin <= 50%
-- medium: 50% < penguin <= 75%
-- large: 75% < penguin <= 100%
+-   tiny: 0% \< penguin \<= 25%
+-   small: 25% \< penguin \<= 50%
+-   medium: 50% \< penguin \<= 75%
+-   large: 75% \< penguin \<= 100%
 
 One possible way to accomplish this is detailed below.
 
@@ -291,7 +280,8 @@ quartile_data <- data |>
 
 
 ```
-The resulting table, named `quartile data` contains the cutout values segregated by species. 
+
+The resulting table, named `quartile data` contains the cutout values segregated by species.
 
 ```{r}
 #| echo: true
@@ -316,28 +306,25 @@ data <- data |>
     mutate(size = factor(size, levels = c("tiny", "small", "medium", "large")))
 ```
 
-#### c - reshaping data 
+#### c - reshaping data
 
-Reshaping data is a very common step you may need complete in order to massage your data into a form that that is better suited for your analysis. The _shape_ of the data refers to whether the data is in a _long_ format or _wide_ format. Wide format is often used when analyzing data, performing calculations, or manual data entry. It’s intuitive for reading and interpreting data. 
+Reshaping data is a very common step you may need complete in order to massage your data into a form that that is better suited for your analysis. The *shape* of the data refers to whether the data is in a *long* format or *wide* format. Wide format is often used when analyzing data, performing calculations, or manual data entry. It’s intuitive for reading and interpreting data.
 
-By comparison, long format is used  when visualizing multiple variables in plots using statistical software. Long format is essential for creating specific types of visualizations. 
+By comparison, long format is used when visualizing multiple variables in plots using statistical software. Long format is essential for creating specific types of visualizations.
 
 You can read more about this topic [here](https://towardsdatascience.com/long-and-wide-formats-in-data-explained-e48d7c9a06cb).
 
-
 ### Communicating findings
 
-An analysis can result in a number of _research artifacts_. Common among those are tables, visualization, and models. These artifacts can be subsequently shared in a variety of formats such as printed documents, online documents, dashboards, and APIs just to name a few.
+An analysis can result in a number of *research artifacts*. Common among those are tables, visualization, and models. These artifacts can be subsequently shared in a variety of formats such as printed documents, online documents, dashboards, and APIs just to name a few.
 
+#### Summarizing findings via tables
 
-#### Summarizing findings via tables 
+Tables are a concise way to systematically organize large amounts of data, condensing complex details into a more manageable form that is easy to access.
 
+There is a variety of choices to create great looking tables in R. One can go around in a manual manner using `markdown` syntax or the visual editor if working with RStudio. I prefer to approach this task in a programmatic manner. For this document, I will use the `gt` package.
 
-Tables are a concise way to  systematically organize large amounts of data, condensing complex details into a more manageable form that is easy to access. 
-
-There is a variety of choices to create great looking tables in R. One can go around in a manual manner using `markdown` syntax or the visual editor if working with RStudio. I prefer to approach this task in a programmatic manner. For this document, I will use the `gt` package. 
-
-The goal for this table is to display the number and percentages of small, medium, and large penguins per species. 
+The goal for this table is to display the number and percentages of small, medium, and large penguins per species.
 
 ```{r penguins-per-size-and-species}
 #| echo: true
@@ -359,10 +346,9 @@ data |>
 
 #### Visualize the data
 
->> A picture is worth a thousand words
+> > A picture is worth a thousand words
 
-@fig-bloxplots shows the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Gentoo penguins are clearly the largest species of penguins in the study, whereas Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island. 
-
+@fig-bloxplots shows the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Gentoo penguins are clearly the largest species of penguins in the study, whereas Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island.
 
 ```{r}
 #| echo: true
@@ -378,33 +364,32 @@ data |>
 
 ```
 
-#### Reporting and communicating findings 
+#### Reporting and communicating findings
 
-It is often the case that after a research cycle has been completed, a comprehensive report needs to be created to document the methods, analyses and findings. Sometimes research workflows may require to produce reports periodically, i.e. the data changes, focused reports for specific audiences, changes in methods, etc. 
+It is often the case that after a research cycle has been completed, a comprehensive report needs to be created to document the methods, analyses and findings. Sometimes research workflows may require to produce reports periodically, i.e. the data changes, focused reports for specific audiences, changes in methods, etc.
 
-A solution that allows for prose and code on the same document is an excellent option for creating documents that build their content on components that are subject to change. This very document you are reading is an example of this approach. 
+A solution that allows for prose and code on the same document is an excellent option for creating documents that build their content on components that are subject to change. This very document you are reading is an example of this approach.
 
-As a prototype, let's consider creating a document that reports the some of the content outlined earlier for a specific type of penguin. The document includes a brief paragraph, a table, and a visualization. The document also includes a parameter that specifies the type of penguin we want to create a report for. 
+As a prototype, let's consider creating a document that reports the some of the content outlined earlier for a specific type of penguin. The document includes a brief paragraph, a table, and a visualization. The document also includes a parameter that specifies the type of penguin we want to create a report for.
 
-A Quarto document, like the one you're are reading right now combines prose and code. The prose is a flavor of `markdown`. Quarto can work with a variety of languages such as `R`, `Python`, and `ObservableJS` among others. 
+A Quarto document, like the one you're are reading right now combines prose and code. The prose is a flavor of `markdown`. Quarto can work with a variety of languages such as `R`, `Python`, and `ObservableJS` among others.
 
-The first required part of Quarto document is its `yaml` header which starts and ends with three dashes like so`---`.  The `yaml` header contains metadata needed to run the document. Among the data, we will include a `params` argument that is defaulted to "Adelie" but it can be changed at run time. 
+The first required part of Quarto document is its `yaml` header which starts and ends with three dashes like so`---`. The `yaml` header contains metadata needed to run the document. Among the data, we will include a `params` argument that is defaulted to "Adelie" but it can be changed at run time.
 
 The file template is housed under the `reports` folder and it is named `penguin-summary.qmd`. Its `yaml` header looks like this
 
-```{}
+```         
 ---
 title: "Penguin Summary"
 format: html
 params:
   species: "Adelie"
 ---
-
 ```
 
 The rest of the document is a combination of prose and code need to convey the report's content. The code below uses the `quarto_render()` function. It takes as arguments the location of the templated file, the desired output format, and a list containing the species parameter. Quarto will perform some calculations that include the number of specimens, the maximum, minimum, and mean weight of the sample discriminated by the species parameter and knit it together with the text to produce a finalized report.
 
-The code below can be adjusted at runtime to produce a report _different_ from the default value. This can be very useful to create reports targeted to a specific stakeholder audience. For instance, the code changed from the default value "Adelie" to "Chinstrap". 
+The code below can be adjusted at runtime to produce a report *different* from the default value. This can be very useful to create reports targeted to a specific stakeholder audience. For instance, the code changed from the default value "Adelie" to "Chinstrap".
 
 ```{r render-parametrized-report}
 #| eval: false
@@ -424,28 +409,24 @@ quarto_render( here("reports/penguin-summary.qmd"),
 
 ### Performing calculations
 
-Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data. For this use case, we are interested in measures of tendency for each of the species of penguins in the dataset.
+Oftentimes part of an analyses workflow involves repeating a calculations across subsets of the data. For this use case, we are interested in measures of central tendency for each of the species of penguins in the dataset.
 
-To that end, we will compute the values of the following variables using a number of approaches. 
+To that end, we will compute the values of the following variables using a number of approaches.
 
-- mbl: mean bill length in mm  
-- sdbl: standard deviation of bill length  
-- mbd: mean bill depth in mm  
-- sdbd: standard deviation of bill depth  
-- mfl: mean flipper length in mm  
-- sdfl: standard deviation of flipper length  
-- mbm: mean body mass in g  
-- sdbm: standard deviation of body mass  
-
-
+-   mbl: mean bill length in mm\
+-   sdbl: standard deviation of bill length\
+-   mbd: mean bill depth in mm\
+-   sdbd: standard deviation of bill depth\
+-   mfl: mean flipper length in mm\
+-   sdfl: standard deviation of flipper length\
+-   mbm: mean body mass in g\
+-   sdbm: standard deviation of body mass
 
 Below I show different approaches to this problem. From worst to --- arguably --- best.
 
 #### Method 1: explicit calculations
 
-Explicit calculations entails splitting the data into the relevant subsets - here each species - and carry out the required calculations for each subgroup. 
-
-
+Explicit calculations entails splitting the data into the relevant subsets - here each species - and carry out the required calculations for each subgroup.
 
 ```{r}
 #| echo: true
@@ -512,26 +493,22 @@ manual_time <- toc()
 ```
 
 ::: {.callout-important collapse="true" title="The DRY Principle"}
-
 > "Don't repeat yourself" (DRY) is a principle of software development aimed at reducing repetition of software patterns, replacing it with abstractions or using data normalization to avoid redundancy.
 
 <!-- >The DRY principle is stated as "Every piece of knowledge must have a single, unambiguous, authoritative representation within a system". The principle has been formulated by Andy Hunt and Dave Thomas in their book The Pragmatic Programmer. They apply it quite broadly to include database schemas, test plans, the build system, even documentation. When the DRY principle is applied successfully, a modification of any single element of a system does not require a change in other logically unrelated elements. Additionally, elements that are logically related all change predictably and uniformly, and are thus kept in sync. Besides using methods and subroutines in their code, Thomas and Hunt rely on code generators, automatic build systems, and scripting languages to observe the DRY principle across layers. -->
 
 > Definition taken from Wikipedia on 2023/04/19
-
 :::
 
 #### Applying the DRY principle
 
-Carrying out calculations manually can be costly in time; even with cut and paste! In addition, manually copying code is prone to errors and typos and is hard to maintain. 
+Carrying out calculations manually can be costly in time; even with cut and paste! In addition, manually copying code is prone to errors and typos and is hard to maintain.
 
 On the other hand, parsimonious code is very explicit in what it does.
-
 
 #### Method 2: for-loops
 
 If you look closely at the code showed before, you'll see that a good part of the code in all the calculations is shared. A better choice is to use a for-loop ranging over the penguin species in the dataset.
-
 
 ```{r}
 #| echo: true
@@ -564,13 +541,9 @@ forloop_time <- toc()
 
 ```
 
-
 #### Method 3: using `dplyr` syntax to manage grouping and aggregation
 
-Another option is to take advantage of `tidyverse's dplyr` syntax to deal with subsetting and aggregation. One of the advantages of `dplyr` syntax is how human-readable it is. 
-
-
-
+Another option is to take advantage of `tidyverse's dplyr` syntax to deal with subsetting and aggregation. One of the advantages of `dplyr` syntax is how human-readable it is.
 
 ```{r}
 #| echo: true
@@ -600,8 +573,7 @@ dplyr_time <- toc()
 
 #### Method 4: abstracting with the purrr package
 
-We can take a DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subsets. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take. 
-
+We can take a DRY-er approach by encapsulating the calculations using a function and applying said function to each of the relevant subsets. The good news is that the code that makes up the function is practically written already. The two necessary steps to complete this workflow are making the function explicit and deciding what arguments the function needs to take.
 
 ```{r}
 #| echo: true
@@ -628,13 +600,10 @@ summarize_penguin_population <- function(df) {
 
 ```
 
-
 ::: callout-important
 -   There is an additional step involved: turning the groups into `list` objects using the `group_split()` function.
 -   The function `map()` is the magic sauce, it requires as arguments the individual lists and a function to be applied to each element of the list.
 :::
-
-
 
 ```{r}
 #| echo: true
@@ -670,7 +639,6 @@ map_time <- toc()
 
 Let's compare how long each method took to perform the calculations.
 
-
 ```{r}
 #| include: true
 #| label: calculations-by-method
@@ -702,25 +670,19 @@ times_by_method |>
 
 ```
 
+There is a tension between clarity and performance. One can be as parsimonious as possible, explicitly writing down every calculation we want carried out, but that comes with loss of performance and a propensity to make mistakes. The `dplyr` and `map` options require a bit of abstracting away from the individual steps. They also required additional steps in order to be implemented, such as creating the function to be mapped and splitting the data into the appropriate subsets.
 
-There is a tension between clarity and performance. One can be as parsimonious as possible, explicitly writing down every calculation we want carried out, but that comes with loss of performance and a propensity to make mistakes. The `dplyr` and `map` options require a bit of abstracting away from the individual steps. They also required additional steps in order to be implemented, such as creating the function to be mapped and splitting the data into the appropriate subsets. 
-
-
-#### What's the better approach? 
+#### What's the better approach?
 
 We have explored iterating using for-loops, dplyr syntax, and purrr's map functions. Each approach has advantages and disadvantages. For instance, I prefer the purrr and dplyr's approaches because of its readability. Ultimately, the size of your data, the requirements of your calculations, or the prospects of maintaining the code might tip you in one direction over others.
 
 Finally, the four approaches above are not an exhaustive list of your choices. For dplyr-like approaches that are more performant check the `datatable` package. For purrr-like approaches, you can also explore the `apply` family of function from base R.
 
-
 ### Creating a predictive model
 
-The original Palmer penguins were distributed among three islands. For our simulation, we are going to explore the scenario were *climate change* has forced these three species of penguins to move to _Janus_ island, a location further south that still maintain the temperature the penguins are accustomed to. 
-
+The original Palmer penguins were distributed among three islands. For our simulation, we are going to explore the scenario were *climate change* has forced these three species of penguins to move to *Janus* island, a location further south that still maintain the temperature the penguins are accustomed to.
 
 Penguins researchers are interested in classifying the wave of penguins migrating to Janus island. The classification model is based on the original data set.
-
-
 
 ```{r}
 #| echo: true
@@ -744,7 +706,7 @@ tic("Fitting model")
 model <- rand_forest() |> 
   set_engine("ranger") |> 
   set_mode("classification") |> 
-  fit(species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g, data = data)
+  fit(species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g, data = filtered_penguins)
 
 fit_time <- toc()
 
@@ -754,19 +716,16 @@ fit_time <- toc()
 
 ```
 
-
-
 ::: callout-note
-With this fitted model in place, we can feed new penguins measurements to it and ask the model what species of penguins each new specimen is. 
+With this fitted model in place, we can feed new penguins measurements to it and ask the model what species of penguins each new specimen is.
 :::
-
-
 
 ### Utilizing the model to predict new specimens
 
 Our PRP collaborators are busy collecting and measuring penguins on Janus island. Those measurements are made available through a `Globus` endpoint
 
 Using the model created earlier to predict what species of a new penguin specimen is is easy. The code below reads the new data from Janus island
+
 ```{r}
 # sim_data <- googlesheets4::read_sheet("https://docs.google.com/spreadsheets/d/1HEQa23hR202egPcnyAtQHGyPRw1WWv61H6aHnAhjcrc/edit#gid=519943868")
 
@@ -784,7 +743,6 @@ predict(model,
 toc()
 ```
 
-
 ```{r}
 sim_data_10 <- slice_sample(janus_penguins, n = 10)
 
@@ -796,57 +754,42 @@ bind_cols(predict(model, new_data = sim_data_10)) |>
 obs_10 <- toc()
 ```
 
-
 ### What happens when your data grows?
 
-The workflow we have followed so far has involved making two very different types of calculations. For the measures of tendencies, we have split the data in three subsets alongside species and carried out the calculations for each species of penguins independently of the other two. By comparison, when we fitted the model that predicts the species of a penguin based on body measurements, we required the entirety of the dataset, that is, all the species taken together. 
+The workflow we have followed so far has involved making two very different types of calculations. For the measures of tendencies, we have split the data in three subsets alongside species and carried out the calculations for each species of penguins independently of the other two. By comparison, when we fitted the model that predicts the species of a penguin based on body measurements, we required the entirety of the dataset, that is, all the species taken together.
 
 This basic distinction is the main criterion to decide whether your analysis is a good candidate for a *high throughput* or a *high performance* cluster.
 
-
 ::: {.callout-important collapse="true" title="HTC vs HPC"}
-
-Here's a little more in detail description of the factors your should consider when deciding about a HTC vs HPC for your compute jobs. 
+Here's a little more in detail description of the factors your should consider when deciding about a HTC vs HPC for your compute jobs.
 
 **Job Characteristics**
 
-- HTC: HTC jobs typically have short runtimes, often in the millisecond range. These are tasks that can be executed in parallel and benefit from efficient scheduling and resource allocation.  
-- HPC: HPC workloads are compute- and data-intensive, often taking several months to complete. They require substantial computational power and efficient data handling.  
-
+-   HTC: HTC jobs typically have short runtimes, often in the millisecond range. These are tasks that can be executed in parallel and benefit from efficient scheduling and resource allocation.\
+-   HPC: HPC workloads are compute- and data-intensive, often taking several months to complete. They require substantial computational power and efficient data handling.
 
 **Resource Requirements**
 
-- HTC: If your job involves many small, independent tasks that can be parallelized, HTC clusters are suitable. These clusters handle a large number of lightweight jobs efficiently.  
-- HPC: For large-scale simulations, complex modeling, or data-intensive tasks, HPC clusters excel. They provide high computational power and memory capacity.  
-
+-   HTC: If your job involves many small, independent tasks that can be parallelized, HTC clusters are suitable. These clusters handle a large number of lightweight jobs efficiently.\
+-   HPC: For large-scale simulations, complex modeling, or data-intensive tasks, HPC clusters excel. They provide high computational power and memory capacity.
 
 **Scalability**
 
-- HTC: HTC clusters can scale out by adding more nodes to handle additional tasks. They are well-suited for handling a large number of concurrent jobs.  
-- HPC: HPC clusters can scale up (adding more resources to existing nodes) or out (adding more nodes). They handle large-scale simulations and scientific computing.
-
+-   HTC: HTC clusters can scale out by adding more nodes to handle additional tasks. They are well-suited for handling a large number of concurrent jobs.\
+-   HPC: HPC clusters can scale up (adding more resources to existing nodes) or out (adding more nodes). They handle large-scale simulations and scientific computing.
 
 **Job Duration**
 
-- HTC: Short-lived tasks benefit from HTC clusters due to their efficient scheduling and quick turnaround.  
-- HPC: Long-running simulations or data-intensive computations are better suited for HPC clusters.  
+-   HTC: Short-lived tasks benefit from HTC clusters due to their efficient scheduling and quick turnaround.\
+-   HPC: Long-running simulations or data-intensive computations are better suited for HPC clusters.
 
 **Storage Requirements**
 
-- HTC: HTC jobs may have less stringent storage demands, as they often process small amounts of data.  
-- HPC: HPC workloads often require high-speed storage systems to handle large datasets efficiently.  
+-   HTC: HTC jobs may have less stringent storage demands, as they often process small amounts of data.\
+-   HPC: HPC workloads often require high-speed storage systems to handle large datasets efficiently.
 
 **Application Type**
 
-- HTC: Suitable for embarrassingly parallel tasks (e.g., parameter sweeps, Monte Carlo simulations).   
-- HPC: Ideal for tightly coupled simulations (e.g., weather modeling, fluid dynamics).  
-
+-   HTC: Suitable for embarrassingly parallel tasks (e.g., parameter sweeps, Monte Carlo simulations).\
+-   HPC: Ideal for tightly coupled simulations (e.g., weather modeling, fluid dynamics).
 :::
-
-
-
-
-
-
-
-
