@@ -55,7 +55,7 @@ Along the way, I will show the rationale behind my design choices. I'll also sho
 
 This project describes the *Penguin Research Project* (PRP).  PRP's goal is to expand on the initial observations done by Dr. Gorman's in 2007. To that effect, I'll showcase an end-to-end workflow that results in a variety of research artifacts. 
 
-@fig-roadmap outlines ...
+@fig-roadmap outlines the basic layout of the project. PRP seeks to expand the original Palmer Penguins research by calculating measures of central tendency by species, crafting several research artifacts, producing reports, and finally, fitting a model capable of predicting the species of a specimen based on the recorded measurements. 
 
 ```{mermaid}
 %%| fig-width: 8
@@ -98,7 +98,7 @@ toc()
 
 #### Data distributed as part of a package. 
 
-Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.packages()` for instance. 
+Another way in which data is commonly distributed is as part of a package or library. Technically, it is still local: at one time, you have had to download it to your computer via `install.packages()`, for instance. 
 
 Data distributed in this manner is easy to share with collaborators and it is very quick to access. Typically, we are talking about small datasets though.
 
@@ -113,7 +113,7 @@ toc()
 
 #### Data read from a database 
 
-As data grows or multiples users require access to the same data, it is common to host the data in a database, rather than a set of flat files. This method involves a few extra steps, but the potential gains are enormous.
+As data grows or multiple users require access to the same data, it is common to host the data in a database, rather than a set of flat files. This method involves a few extra steps, but the potential gains are enormous.
 
 Things to keep an eye out for:  
 - a database connection needs to be established.  
@@ -161,7 +161,7 @@ Learn more about storage and sharing data with [ResearchDrive and Globus at UW-M
 
 #### Data from an online source 
 
-Here the online source is the flat file stored on a Google Drive folder made accessible through through a public link. Depending on the type of data you are working with, some options may or may not be available to you. 
+Here the online source is the flat file stored on a Google Drive folder made accessible through through a link publicly hosted. The one used here is a file hosted on `Google Drive`. Depending how the file is hosted, you will likely need to add additional steps in order to gain access to the data you want. 
 
 ```{r}
 #| echo: true
@@ -361,7 +361,7 @@ data |>
 
 >> A picture is worth a thousand words
 
-@fig-bloxplots shows the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Gentoo penguins are clearly the largest species of penguins in the study, whereas Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island. 
+@fig-boxplots shows the weight distribution of all three species of Penguins, discriminated by location on which each specimen was captured. Gentoo penguins are clearly the largest species of penguins in the study, whereas Adelie penguins are the smallest of the three species. Adelie penguins, unlike Gentoos and Chinstraps, are found in all three islands surveyed. By comparison, Gentoos are only found in the Biscoe Island, and Chinstraps are only found in the Dream island. 
 
 
 ```{r}
