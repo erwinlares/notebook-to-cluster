@@ -46,7 +46,7 @@ My goal, for the first half, is to create a walk-through that documents the step
 
 I aimed to make the steps outlined here general enough so that most researchers would find an overlap with the steps they are required to take in their own field-specific research.
 
-Along the way, I will show the rationale behind my design choices. I'll also showcase common best practices as well as tools available to you which might make your work easier. 
+Along the way, I will show the rationale behind my design choices. I'll also showcase some common best practices as well as tools available to you which might make your work easier. 
 
 
 # The notebook half  
